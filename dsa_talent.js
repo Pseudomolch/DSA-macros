@@ -70,8 +70,13 @@ let attributesAndTaW = await new Promise((resolve) => {
     
     dialog.render(true);
 });
-
-// Rest of the macro remains the same
+// Summary of the rest of the macro:
+// 1. Perform three d20 rolls
+// 2. Check for critical success (2+ ones) or failure (2+ twenties)
+// 3. Apply modifiers to TaW and attributes
+// 4. Calculate remaining TaW after attribute checks
+// 5. Determine success or failure based on remaining TaW
+// 6. Generate detailed message for chat output
 let rolls = [new Roll('1d20').roll({async: false}).total, new Roll('1d20').roll({async: false}).total, new Roll('1d20').roll({async: false}).total];
 
 let numOnes = rolls.filter(roll => roll === 1).length;
