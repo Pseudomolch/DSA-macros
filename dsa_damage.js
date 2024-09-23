@@ -25,9 +25,85 @@ let damageValues = await new Promise((resolve) => {
     new Dialog({
         title: "DSA 4.1 Schadenswurf",
         content: `
-            <label for="damageFormula">Schaden:</label><input id="damageFormula" type="text" style="width: 100%;" placeholder="z.B. 1W+4 oder 1W6+4"><br>
-            <label for="wuchtschlag">Wucht:</label><input id="wuchtschlag" type="number" style="width: 100%;" value="0"><br>
-            <label for="kritisch">Kritisch:</label><input id="kritisch" type="checkbox">
+        <style>
+            .dsa-dialog { 
+                display: grid; 
+                grid-template-columns: 1fr; 
+                gap: 8px; 
+                padding-bottom: 8px;
+            }
+            .dsa-dialog input[type="number"], 
+            .dsa-dialog input[type="text"] { 
+                width: 100%; 
+                text-align: center; 
+            }
+            .dsa-dialog label { 
+                display: block; 
+                text-align: center; 
+                margin-bottom: 2px; 
+                margin-top: 8px;
+            }
+            .dsa-dialog .top-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 8px;
+                align-items: start;
+            }
+            .dsa-dialog .armor-row {
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+                gap: 8px;
+            }
+            .dialog-buttons {
+                margin-top: 8px;
+            }
+            .crit-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .crit-container input[type="checkbox"] {
+                margin-top: 5px;
+            }
+        </style>
+        <form class="dsa-dialog">
+            <div class="top-row">
+                <div>
+                    <label for="damageFormula">Schaden</label>
+                    <input id="damageFormula" type="text" placeholder="z.B. 1W+4" required>
+                </div>
+                <div>
+                    <label for="wuchtschlag">Wucht</label>
+                    <input id="wuchtschlag" type="number" value="0">
+                </div>
+                <div class="crit-container">
+                    <label for="kritisch">Krit</label>
+                    <input id="kritisch" type="checkbox">
+                </div>
+            </div>
+            <div class="armor-row">
+                <div>
+                    <label for="kopf">Kopf</label>
+                    <input id="kopf" type="number" value="0">
+                </div>
+                <div>
+                    <label for="brust">Brust</label>
+                    <input id="brust" type="number" value="0">
+                </div>
+                <div>
+                    <label for="arme">Arme</label>
+                    <input id="arme" type="number" value="0">
+                </div>
+                <div>
+                    <label for="bauch">Bauch</label>
+                    <input id="bauch" type="number" value="0">
+                </div>
+                <div>
+                    <label for="beine">Beine</label>
+                    <input id="beine" type="number" value="0">
+                </div>
+            </div>
+        </form>
         `,
         buttons: {
             roll: {
@@ -36,12 +112,22 @@ let damageValues = await new Promise((resolve) => {
                     resolve({
                         damageFormula: html.find('#damageFormula')[0].value,
                         wuchtschlag: parseInt(html.find('#wuchtschlag')[0].value) || 0,
-                        kritisch: html.find('#kritisch')[0].checked
+                        kritisch: html.find('#kritisch')[0].checked,
+                        armor: {
+                            kopf: parseInt(html.find('#kopf')[0].value) || 0,
+                            brust: parseInt(html.find('#brust')[0].value) || 0,
+                            arme: parseInt(html.find('#arme')[0].value) || 0,
+                            bauch: parseInt(html.find('#bauch')[0].value) || 0,
+                            beine: parseInt(html.find('#beine')[0].value) || 0
+                        }
                     });
                 }
             }
         },
-        default: "roll"
+        default: "roll",
+        render: html => setTimeout(() => html.find('#damageFormula').focus(), 0)
+    }, {
+        width: 300 // Adjusted width to accommodate the new layout
     }).render(true);
 });
 
@@ -99,8 +185,7 @@ modifier = modifier ? parseInt(modifier[1]) : 0;
 let messageContent = `<div style="background-color: #f0f0f0; border: 1px solid #ccc; padding: 5px; border-radius: 3px;">`;
 messageContent += `<strong>Schaden:</strong> ${damageValues.kritisch ? `(${damageValues.damageFormula})x2` : damageValues.damageFormula}`;
 if (damageValues.wuchtschlag > 0) messageContent += `+${damageValues.wuchtschlag}(Wucht)`;
-messageContent += `<br><strong>Rüstung:</strong> 0 ${hitLocation} (${hitLocationRoll.total})<br>`;
-messageContent += `<strong>Wurf:</strong> `;
+messageContent += `<br><strong>Wurf:</strong> `;
 if (damageValues.kritisch) {
     messageContent += `(${diceRollString}${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''})x2`;
 } else {
@@ -109,20 +194,49 @@ if (damageValues.kritisch) {
 if (damageValues.wuchtschlag > 0) messageContent += `+${damageValues.wuchtschlag}`;
 messageContent += ` = ${totalDamage} Schaden`;
 
+// Get the armor value based on hit location
+let armorValue = 0;
+switch (hitLocation) {
+    case "am Kopf":
+        armorValue = damageValues.armor.kopf;
+        break;
+    case "an der Brust":
+        armorValue = damageValues.armor.brust;
+        break;
+    case "am rechten Arm":
+    case "am linken Arm":
+        armorValue = damageValues.armor.arme;
+        break;
+    case "am Bauch":
+        armorValue = damageValues.armor.bauch;
+        break;
+    case "am rechten Bein":
+    case "am linken Bein":
+        armorValue = damageValues.armor.beine;
+        break;
+}
+
+messageContent += `<br><strong>Rüstung:</strong> ${armorValue} ${hitLocation} (${hitLocationRoll.total})`;
+
 // Calculate wounds based on damage and wound thresholds
 if (token && woundThresholds.length > 0) {
     let woundsInflicted = 0;
-    if (totalDamage > woundThresholds[2]) {
+    let damageAfterArmor = Math.max(0, totalDamage - armorValue);
+    if (damageAfterArmor > woundThresholds[2]) {
         woundsInflicted = 3;
-    } else if (totalDamage > woundThresholds[1]) {
+    } else if (damageAfterArmor > woundThresholds[1]) {
         woundsInflicted = 2;
-    } else if (totalDamage > woundThresholds[0]) {
+    } else if (damageAfterArmor > woundThresholds[0]) {
         woundsInflicted = 1;
     }
     
+    messageContent += `<br>${damageAfterArmor} <strong>TP</strong>`;
     if (woundsInflicted > 0) {
-        messageContent += `<br>${woundsInflicted} <strong>${woundsInflicted === 1 ? 'Wunde' : 'Wunden'}</strong>`;
+        messageContent += `, ${woundsInflicted} <strong>${woundsInflicted === 1 ? 'Wunde' : 'Wunden'}</strong>`;
     }
+} else {
+    let damageAfterArmor = Math.max(0, totalDamage - armorValue);
+    messageContent += `<br>${damageAfterArmor} <strong>TP</strong>`;
 }
 
 messageContent += `</div>`;
