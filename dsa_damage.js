@@ -1,9 +1,11 @@
-// Check if a token is selected
+// Check if tokens are selected
 let token = null;
 let wounds = 0;
 let woundThresholds = [];
 
-if (canvas.tokens.controlled.length > 0) {
+if (canvas.tokens.controlled.length > 1) {
+    ui.notifications.error("Mehrere Tokens ausgewählt. Verwende Standard-Makro.");
+} else if (canvas.tokens.controlled.length === 1) {
     token = canvas.tokens.controlled[0];
     const actor = token.actor;
 
@@ -230,19 +232,59 @@ if (token && woundThresholds.length > 0) {
         woundsInflicted = 1;
     }
     
-    messageContent += `<br>${damageAfterArmor} <strong>TP</strong>`;
+    messageContent += `<br>${damageAfterArmor} <strong>TP</strong> <a class="apply-damage" data-damage="${damageAfterArmor}"><i class="fas fa-heart"></i></a>`;
     if (woundsInflicted > 0) {
         messageContent += `, ${woundsInflicted} <strong>${woundsInflicted === 1 ? 'Wunde' : 'Wunden'}</strong>`;
     }
 } else {
     let damageAfterArmor = Math.max(0, totalDamage - armorValue);
     messageContent += `<br>${damageAfterArmor} <strong>TP</strong>`;
+    if (canvas.tokens.controlled.length == 1) {
+        messageContent += ` <a class="apply-damage" data-damage="${damageAfterArmor}"><i class="fas fa-heart"></i></a>`;
+    }
 }
 
 messageContent += `</div>`;
 
 // Send the result to the chat
-ChatMessage.create({
+let chatMessage = await ChatMessage.create({
     speaker: ChatMessage.getSpeaker(),
     content: messageContent
 });
+
+// Add click event listener to the heart icon
+if (token && canvas.tokens.controlled.length === 1) {
+    setTimeout(() => {
+        const messageElement = document.querySelector(`[data-message-id="${chatMessage.id}"]`);
+        if (messageElement) {
+            const applyDamageButton = messageElement.querySelector('.apply-damage');
+            if (applyDamageButton) {
+                const clickHandler = async (event) => {
+                    event.preventDefault();
+                    const damage = parseInt(event.currentTarget.dataset.damage);
+                    const currentLeP = token.actor.system.base.resources.vitality.value;
+                    const newLeP = Math.max(0, currentLeP - damage);
+                    await token.actor.update({"system.base.resources.vitality.value": newLeP});
+                    
+                    // Create a new chat message for confirmation
+                    let confirmationContent = `<div style="background-color: #f0f0f0; border: 1px solid #ccc; padding: 5px; border-radius: 3px;">`;
+                    confirmationContent += `<strong>${damage} Schaden</strong> auf ${token.name} angewendet.`;
+                    confirmationContent += `<br>Neue LeP: ${newLeP}`;
+                    confirmationContent += `</div>`;
+                    
+                    await ChatMessage.create({
+                        speaker: ChatMessage.getSpeaker(),
+                        content: confirmationContent
+                    });
+                };
+
+                applyDamageButton.addEventListener('click', clickHandler);
+
+                // Clean up the event listener when the message is deleted
+                Hooks.once(`deleteMessage${chatMessage.id}`, () => {
+                    applyDamageButton.removeEventListener('click', clickHandler);
+                });
+            }
+        }
+    }, 100);
+}
