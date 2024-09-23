@@ -3,16 +3,52 @@ let attackValues = await new Promise((resolve) => {
     new Dialog({
         title: "DSA 4.1 Angriffsprobe",
         content: `
-            <div style="display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center;">
-                <label for="attackValue">Attacke:</label>
-                <input id="attackValue" type="number" style="width: 100%;">
-                <label for="modifier">Mod:</label>
-                <input id="modifier" type="number" style="width: 100%;">
-                <label for="wuchtschlag">Wuchtschlag:</label>
-                <input id="wuchtschlag" type="number" style="width: 100%;">
-                <label for="finte">Finte:</label>
-                <input id="finte" type="number" style="width: 100%;">
+        <style>
+            .dsa-dialog { 
+                display: grid; 
+                grid-template-columns: 1fr; 
+                gap: 8px; 
+                padding-bottom: 8px;
+            }
+            .dsa-dialog input[type="number"] { 
+                width: 100%; 
+                text-align: center; 
+            }
+            .dsa-dialog label { 
+                display: block; 
+                text-align: center; 
+                margin-bottom: 2px; 
+                margin-top: 8px;
+            }
+            .dsa-dialog .modifiers {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+            .dialog-buttons {
+                margin-top: 8px;
+            }
+        </style>
+        <form class="dsa-dialog">
+            <div>
+                <label for="attackValue">Attacke</label>
+                <input id="attackValue" type="number" required>
             </div>
+            <div class="modifiers">
+                <div>
+                    <label for="modifier">Mod</label>
+                    <input id="modifier" type="number" value="0">
+                </div>
+                <div>
+                    <label for="wuchtschlag">Wuchtschlag</label>
+                    <input id="wuchtschlag" type="number" value="0">
+                </div>
+                <div>
+                    <label for="finte">Finte</label>
+                    <input id="finte" type="number" value="0">
+                </div>
+            </div>
+        </form>
         `,
         buttons: {
             roll: {
@@ -28,17 +64,9 @@ let attackValues = await new Promise((resolve) => {
             }
         },
         default: "roll",
-        render: html => {
-            const inputs = html.find('input');
-            inputs.on('keydown', function(e) {
-                if (e.which === 9) { // Tab key
-                    e.preventDefault();
-                    const nextInput = inputs.eq((inputs.index(this) + 1) % inputs.length);
-                    nextInput.focus();
-                }
-            });
-            setTimeout(() => html.find('#attackValue').focus(), 0);
-        }
+        render: html => setTimeout(() => html.find('#attackValue').focus(), 0)
+    }, {
+        width: 225 // Reduced width by about 25%
     }).render(true);
 });
 
