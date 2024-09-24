@@ -14,49 +14,8 @@ if (selectedTokens.length === 0) {
         content: messageContent
     });
 } else {
-    // Construct the message content for selected tokens
-    let messageContent = `<div style="background-color: #f0f0f0; border: 1px solid #ccc; padding: 5px; border-radius: 3px;">`;
-    messageContent += `<strong>Ausgewählte Tokens:</strong><br>`;
-
-    // Iterate over each selected token
-    selectedTokens.forEach(token => {
-        let tokenData = token.actor.data.data.base.resources;
-        let lepCurrent = tokenData.vitality.value;
-        let lepMax = tokenData.vitality.max;
-        let aspCurrent = tokenData.astralEnergy.value;
-        let aspMax = tokenData.astralEnergy.max;
-
-        // Get special abilities
-        let specialAbilities = token.actor.items
-            .filter(item => item.type === "specialAbility")
-            .map(ability => ability.name);
-
-        // Make the token name clickable using a <span> instead of <a>
-        messageContent += `<span class="token-link" data-token-id="${token.id}" style="color: blue; text-decoration: underline; cursor: pointer;"><strong>${token.name}</strong></span>: LeP ${lepCurrent}/${lepMax}`;
-        
-        if (aspMax > 0) {
-            messageContent += `, AsP ${aspCurrent}/${aspMax}`;
-        }
-
-        if (specialAbilities.length > 0) {
-            let abilitiesList = specialAbilities.join(", ");
-            messageContent += `, ${abilitiesList}`;
-        }
-
-        messageContent += `<br>`;
-    });
-
-    messageContent += `</div>`;
-
-    // Send the result to the chat
-    ChatMessage.create({
-        speaker: ChatMessage.getSpeaker(),
-        content: messageContent,
-        // Enable whisper or other chat message options if needed
-    }).then(() => {
-        // After creating the chat message, set up the click listeners
-        setupTokenLinkListeners();
-    });
+    // Use the createTokenStatMessage function to construct and send the message for all selected tokens
+    createTokenStatMessage(selectedTokens);
 }
 
 /**
@@ -165,6 +124,9 @@ function setupTokenLinkListeners() {
                             }));
                             await actor.createEmbeddedDocuments("Item", newAbilities);
                         }
+
+                        // Output a chat message for the updated token
+                        createTokenStatMessage([token]);
                     }
                 },
                 cancel: {
@@ -201,5 +163,50 @@ function setupTokenLinkListeners() {
                 });
             }
         });
+    });
+}
+
+/**
+ * Creates a chat message for a given array of tokens with their current stats.
+ * @param {Token[]} tokens - The array of tokens to create the message for.
+ */
+function createTokenStatMessage(tokens) {
+    let messageContent = `<div style="background-color: #f0f0f0; border: 1px solid #ccc; padding: 5px; border-radius: 3px;">`;
+
+    tokens.forEach(token => {
+        let tokenData = token.actor.data.data.base.resources;
+        let lepCurrent = tokenData.vitality.value;
+        let lepMax = tokenData.vitality.max;
+        let aspCurrent = tokenData.astralEnergy.value;
+        let aspMax = tokenData.astralEnergy.max;
+
+        // Get special abilities
+        let specialAbilities = token.actor.items
+            .filter(item => item.type === "specialAbility")
+            .map(ability => ability.name);
+
+        messageContent += `<span class="token-link" data-token-id="${token.id}" style="color: blue; text-decoration: underline; cursor: pointer;"><strong>${token.name}</strong></span>: LeP ${lepCurrent}/${lepMax}`;
+        
+        if (aspMax > 0) {
+            messageContent += `, AsP ${aspCurrent}/${aspMax}`;
+        }
+
+        if (specialAbilities.length > 0) {
+            let abilitiesList = specialAbilities.join(", ");
+            messageContent += `, ${abilitiesList}`;
+        }
+
+        messageContent += `<br>`;
+    });
+
+    messageContent += `</div>`;
+
+    // Send the result to the chat
+    ChatMessage.create({
+        speaker: ChatMessage.getSpeaker(),
+        content: messageContent
+    }).then(() => {
+        // After creating the chat message, set up the click listeners
+        setupTokenLinkListeners();
     });
 }
