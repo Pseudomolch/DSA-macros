@@ -1,3 +1,22 @@
+// Check for selected token with Meisterperson ability
+let selectedToken = null;
+let meisterpersonAbility = null;
+let defaultAttackValue = "";
+let attackName = "";
+
+if (canvas.tokens.controlled.length === 1) {
+    selectedToken = canvas.tokens.controlled[0];
+    meisterpersonAbility = selectedToken.actor.items.find(item => item.type === "specialAbility" && item.name === "Meisterperson");
+    
+    if (meisterpersonAbility) {
+        const match = meisterpersonAbility.system.description.match(/Angriff (.+), DK [A-Z], AT (\d+),/);
+        if (match) {
+            attackName = match[1];
+            defaultAttackValue = match[2];
+        }
+    }
+}
+
 // Prompt the user for the attack value and modifiers
 let attackValues = await new Promise((resolve) => {
     new Dialog({
@@ -32,7 +51,7 @@ let attackValues = await new Promise((resolve) => {
         <form class="dsa-dialog">
             <div>
                 <label for="attackValue">Attacke</label>
-                <input id="attackValue" type="number" required>
+                <input id="attackValue" type="number" value="${defaultAttackValue}" required>
             </div>
             <div class="modifiers">
                 <div>
@@ -102,6 +121,12 @@ if (naturalRoll === 1) {
 
 // Construct the message content
 let messageContent = `<div style="background-color: #f0f0f0; border: 1px solid #ccc; padding: 5px; border-radius: 3px;">`;
+
+// Add the new line for selected token and attack name if available
+if (selectedToken && meisterpersonAbility && attackName) {
+    messageContent += `<strong>${selectedToken.name}</strong> attackiert mit <strong>${attackName}</strong><br>`;
+}
+
 messageContent += `<strong>Attacke:</strong> ${attackValues.attackValue}<br>`;
 
 if (naturalRoll === 1 || naturalRoll === 20) {

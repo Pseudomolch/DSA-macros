@@ -29,27 +29,45 @@ if (canvas.tokens.controlled.length === 1) {
     selectedToken = canvas.tokens.controlled[0];
 }
 
-// Function to parse armor values from the actor's special ability
+// Function to parse armor values from the actor's special abilities
 function parseArmorValues(actor) {
     const armorAbility = actor.items.find(item => item.type === "specialAbility" && item.name === "Rüstungswerte");
-    if (!armorAbility) return null;
+    if (armorAbility) {
+        const regex = /Kopf (\d+), Brust (\d+\/?\d*), Arme (\d+\/?\d*), Bauch (\d+), Beine (\d+\/?\d*)/;
+        const match = armorAbility.system.description.match(regex);
+        if (!match) return null;
 
-    const regex = /Kopf (\d+), Brust (\d+\/?\d*), Arme (\d+\/?\d*), Bauch (\d+), Beine (\d+\/?\d*)/;
-    const match = armorAbility.system.description.match(regex);
-    if (!match) return null;
+        const parseValue = (value) => {
+            const parts = value.split('/').map(Number);
+            return parts.length === 1 ? parts[0] : parts;
+        };
 
-    const parseValue = (value) => {
-        const parts = value.split('/').map(Number);
-        return parts.length === 1 ? parts[0] : parts;
-    };
+        return {
+            kopf: parseInt(match[1]),
+            brust: parseValue(match[2]),
+            arme: parseValue(match[3]),
+            bauch: parseInt(match[4]),
+            beine: parseValue(match[5])
+        };
+    } else {
+        // If no Rüstungswerte ability, check for Meisterperson ability
+        const meisterpersonAbility = actor.items.find(item => item.type === "specialAbility" && item.name === "Meisterperson");
+        if (meisterpersonAbility) {
+            const match = meisterpersonAbility.system.description.match(/RS (\d+)/);
+            if (match) {
+                const rs = parseInt(match[1]);
+                return {
+                    kopf: rs,
+                    brust: rs,
+                    arme: rs,
+                    bauch: rs,
+                    beine: rs
+                };
+            }
+        }
+    }
 
-    return {
-        kopf: parseInt(match[1]),
-        brust: parseValue(match[2]),
-        arme: parseValue(match[3]),
-        bauch: parseInt(match[4]),
-        beine: parseValue(match[5])
-    };
+    return null;
 }
 
 // Function to get TP value from Meisterperson ability
