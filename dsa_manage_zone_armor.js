@@ -9,18 +9,20 @@ const actor = token.actor;
 
 // Function to parse existing armor data
 function parseExistingArmorData(description) {
-    const regex = /Rüstung: Kopf (\d+), Brust (\d+), Rücken (\d+), Linker Arm (\d+), Rechter Arm (\d+), Bauch (\d+), Linkes Bein (\d+), Rechtes Bein (\d+)/;
+    const regex = /Kopf (\d+), Brust (\d+\/?\d*), Arme (\d+\/?\d*), Bauch (\d+), Beine (\d+\/?\d*)/;
     const match = description.match(regex);
     if (match) {
+        const parseValue = (value) => {
+            const parts = value.split('/').map(Number);
+            return parts.length === 1 ? parts[0] : parts;
+        };
+
         return {
             kopf: parseInt(match[1]),
-            brust: parseInt(match[2]),
-            ruecken: parseInt(match[3]),
-            linkerArm: parseInt(match[4]),
-            rechterArm: parseInt(match[5]),
-            bauch: parseInt(match[6]),
-            linkesBein: parseInt(match[7]),
-            rechtesBein: parseInt(match[8])
+            brust: parseValue(match[2]),
+            arme: parseValue(match[3]),
+            bauch: parseInt(match[4]),
+            beine: parseValue(match[5])
         };
     }
     return null;
@@ -37,39 +39,51 @@ if (existingAbility) {
 new Dialog({
     title: "DSA Zonenrüstung verwalten",
     content: `
-    <form>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+    <style>
+        .dsa-dialog { 
+            display: grid; 
+            grid-template-columns: 1fr; 
+            gap: 8px; 
+            padding-bottom: 8px;
+        }
+        .dsa-dialog input[type="number"], 
+        .dsa-dialog input[type="text"] { 
+            width: 100%; 
+            text-align: center; 
+        }
+        .dsa-dialog label { 
+            display: block; 
+            text-align: center; 
+            margin-bottom: 2px; 
+            margin-top: 8px;
+        }
+        .dsa-dialog .armor-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+    </style>
+    <form class="dsa-dialog">
+        <div class="armor-row">
             <div>
-                <label for="kopf">Kopf:</label>
-                <input type="number" id="kopf" name="kopf" value="${existingArmorData?.kopf || 0}" min="0">
+                <label for="kopf">Kopf</label>
+                <input type="text" id="kopf" name="kopf" value="${existingArmorData?.kopf || 0}">
             </div>
             <div>
-                <label for="brust">Brust:</label>
-                <input type="number" id="brust" name="brust" value="${existingArmorData?.brust || 0}" min="0">
+                <label for="brust">Brust</label>
+                <input type="text" id="brust" name="brust" value="${Array.isArray(existingArmorData?.brust) ? existingArmorData.brust.join('/') : existingArmorData?.brust || 0}">
             </div>
             <div>
-                <label for="ruecken">Rücken:</label>
-                <input type="number" id="ruecken" name="ruecken" value="${existingArmorData?.ruecken || 0}" min="0">
+                <label for="arme">Arme</label>
+                <input type="text" id="arme" name="arme" value="${Array.isArray(existingArmorData?.arme) ? existingArmorData.arme.join('/') : existingArmorData?.arme || 0}">
             </div>
             <div>
-                <label for="linkerArm">Linker Arm:</label>
-                <input type="number" id="linkerArm" name="linkerArm" value="${existingArmorData?.linkerArm || 0}" min="0">
+                <label for="bauch">Bauch</label>
+                <input type="text" id="bauch" name="bauch" value="${existingArmorData?.bauch || 0}">
             </div>
             <div>
-                <label for="rechterArm">Rechter Arm:</label>
-                <input type="number" id="rechterArm" name="rechterArm" value="${existingArmorData?.rechterArm || 0}" min="0">
-            </div>
-            <div>
-                <label for="bauch">Bauch:</label>
-                <input type="number" id="bauch" name="bauch" value="${existingArmorData?.bauch || 0}" min="0">
-            </div>
-            <div>
-                <label for="linkesBein">Linkes Bein:</label>
-                <input type="number" id="linkesBein" name="linkesBein" value="${existingArmorData?.linkesBein || 0}" min="0">
-            </div>
-            <div>
-                <label for="rechtesBein">Rechtes Bein:</label>
-                <input type="number" id="rechtesBein" name="rechtesBein" value="${existingArmorData?.rechtesBein || 0}" min="0">
+                <label for="beine">Beine</label>
+                <input type="text" id="beine" name="beine" value="${Array.isArray(existingArmorData?.beine) ? existingArmorData.beine.join('/') : existingArmorData?.beine || 0}">
             </div>
         </div>
     </form>
@@ -79,18 +93,39 @@ new Dialog({
             icon: '<i class="fas fa-save"></i>',
             label: "Speichern",
             callback: async (html) => {
-                const armorData = {
-                    kopf: parseInt(html.find('[name="kopf"]').val()) || 0,
-                    brust: parseInt(html.find('[name="brust"]').val()) || 0,
-                    ruecken: parseInt(html.find('[name="ruecken"]').val()) || 0,
-                    linkerArm: parseInt(html.find('[name="linkerArm"]').val()) || 0,
-                    rechterArm: parseInt(html.find('[name="rechterArm"]').val()) || 0,
-                    bauch: parseInt(html.find('[name="bauch"]').val()) || 0,
-                    linkesBein: parseInt(html.find('[name="linkesBein"]').val()) || 0,
-                    rechtesBein: parseInt(html.find('[name="rechtesBein"]').val()) || 0
+                const parseSingleValue = (input) => {
+                    const num = parseInt(input);
+                    if (isNaN(num)) {
+                        ui.notifications.error("Falscher Input, nutze eine Zahl.");
+                        return null;
+                    }
+                    return num;
                 };
 
-                const description = `Rüstung: Kopf ${armorData.kopf}, Brust ${armorData.brust}, Rücken ${armorData.ruecken}, Linker Arm ${armorData.linkerArm}, Rechter Arm ${armorData.rechterArm}, Bauch ${armorData.bauch}, Linkes Bein ${armorData.linkesBein}, Rechtes Bein ${armorData.rechtesBein}`;
+                const parseDoubleValue = (input) => {
+                    const parts = input.split('/').map(part => parseInt(part));
+                    if (parts.some(isNaN) || parts.length > 2) {
+                        ui.notifications.error("Falscher Input, nutze x oder x/x.");
+                        return null;
+                    }
+                    return parts.length === 1 ? parts[0] : parts;
+                };
+
+                const formatValue = (value) => {
+                    return Array.isArray(value) ? value.join('/') : value.toString();
+                };
+
+                const kopf = parseSingleValue(html.find('[name="kopf"]').val());
+                const brust = parseDoubleValue(html.find('[name="brust"]').val());
+                const arme = parseDoubleValue(html.find('[name="arme"]').val());
+                const bauch = parseSingleValue(html.find('[name="bauch"]').val());
+                const beine = parseDoubleValue(html.find('[name="beine"]').val());
+
+                if ([kopf, brust, arme, bauch, beine].some(value => value === null)) {
+                    return; // Stop execution if any input is invalid
+                }
+
+                const description = `Kopf ${formatValue(kopf)}, Brust ${formatValue(brust)}, Arme ${formatValue(arme)}, Bauch ${formatValue(bauch)}, Beine ${formatValue(beine)}`;
 
                 if (existingAbility) {
                     await existingAbility.update({
@@ -105,8 +140,6 @@ new Dialog({
                         }
                     }]);
                 }
-
-                ui.notifications.info("Rüstungswerte wurden gespeichert.");
             }
         },
         cancel: {
@@ -114,5 +147,6 @@ new Dialog({
             label: "Abbrechen"
         }
     },
-    default: "save"
+    default: "save",
+    width: 400 // Adjusted width to accommodate the new layout
 }).render(true);
