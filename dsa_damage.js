@@ -22,8 +22,33 @@ if (canvas.tokens.controlled.length > 1) {
     ];
 }
 
+// Function to parse armor values from the actor's special ability
+function parseArmorValues(actor) {
+    const armorAbility = actor.items.find(item => item.type === "specialAbility" && item.name === "Rüstungswerte");
+    if (!armorAbility) return null;
+
+    const regex = /Kopf (\d+), Brust (\d+\/?\d*), Arme (\d+\/?\d*), Bauch (\d+), Beine (\d+\/?\d*)/;
+    const match = armorAbility.system.description.match(regex);
+    if (!match) return null;
+
+    const parseValue = (value) => {
+        const parts = value.split('/').map(Number);
+        return parts.length === 1 ? parts[0] : parts;
+    };
+
+    return {
+        kopf: parseInt(match[1]),
+        brust: parseValue(match[2]),
+        arme: parseValue(match[3]),
+        bauch: parseInt(match[4]),
+        beine: parseValue(match[5])
+    };
+}
+
 // Prompt the user for the damage formula and modifiers
 let damageValues = await new Promise((resolve) => {
+    let armorValues = token ? parseArmorValues(token.actor) : null;
+
     new Dialog({
         title: "DSA 4.1 Schadenswurf",
         content: `
@@ -86,23 +111,23 @@ let damageValues = await new Promise((resolve) => {
             <div class="armor-row">
                 <div>
                     <label for="kopf">Kopf</label>
-                    <input id="kopf" type="number" value="0">
+                    <input id="kopf" type="number" value="${armorValues ? armorValues.kopf : 0}">
                 </div>
                 <div>
                     <label for="brust">Brust</label>
-                    <input id="brust" type="number" value="0">
+                    <input id="brust" type="text" value="${armorValues ? (Array.isArray(armorValues.brust) ? armorValues.brust.join('/') : armorValues.brust) : 0}">
                 </div>
                 <div>
                     <label for="arme">Arme</label>
-                    <input id="arme" type="number" value="0">
+                    <input id="arme" type="text" value="${armorValues ? (Array.isArray(armorValues.arme) ? armorValues.arme.join('/') : armorValues.arme) : 0}">
                 </div>
                 <div>
                     <label for="bauch">Bauch</label>
-                    <input id="bauch" type="number" value="0">
+                    <input id="bauch" type="number" value="${armorValues ? armorValues.bauch : 0}">
                 </div>
                 <div>
                     <label for="beine">Beine</label>
-                    <input id="beine" type="number" value="0">
+                    <input id="beine" type="text" value="${armorValues ? (Array.isArray(armorValues.beine) ? armorValues.beine.join('/') : armorValues.beine) : 0}">
                 </div>
             </div>
         </form>
@@ -111,16 +136,21 @@ let damageValues = await new Promise((resolve) => {
             roll: {
                 label: "Würfeln",
                 callback: (html) => {
+                    const parseArmorValue = (value) => {
+                        const parts = value.split('/').map(Number);
+                        return parts.length === 1 ? parts[0] : parts;
+                    };
+
                     resolve({
                         damageFormula: html.find('#damageFormula')[0].value,
                         wuchtschlag: parseInt(html.find('#wuchtschlag')[0].value) || 0,
                         kritisch: html.find('#kritisch')[0].checked,
                         armor: {
                             kopf: parseInt(html.find('#kopf')[0].value) || 0,
-                            brust: parseInt(html.find('#brust')[0].value) || 0,
-                            arme: parseInt(html.find('#arme')[0].value) || 0,
+                            brust: parseArmorValue(html.find('#brust')[0].value),
+                            arme: parseArmorValue(html.find('#arme')[0].value),
                             bauch: parseInt(html.find('#bauch')[0].value) || 0,
-                            beine: parseInt(html.find('#beine')[0].value) || 0
+                            beine: parseArmorValue(html.find('#beine')[0].value)
                         }
                     });
                 }
@@ -203,18 +233,22 @@ switch (hitLocation) {
         armorValue = damageValues.armor.kopf;
         break;
     case "an der Brust":
-        armorValue = damageValues.armor.brust;
+        armorValue = Array.isArray(damageValues.armor.brust) ? damageValues.armor.brust[0] : damageValues.armor.brust;
         break;
     case "am rechten Arm":
+        armorValue = Array.isArray(damageValues.armor.arme) ? damageValues.armor.arme[1] : damageValues.armor.arme;
+        break;
     case "am linken Arm":
-        armorValue = damageValues.armor.arme;
+        armorValue = Array.isArray(damageValues.armor.arme) ? damageValues.armor.arme[0] : damageValues.armor.arme;
         break;
     case "am Bauch":
         armorValue = damageValues.armor.bauch;
         break;
     case "am rechten Bein":
+        armorValue = Array.isArray(damageValues.armor.beine) ? damageValues.armor.beine[1] : damageValues.armor.beine;
+        break;
     case "am linken Bein":
-        armorValue = damageValues.armor.beine;
+        armorValue = Array.isArray(damageValues.armor.beine) ? damageValues.armor.beine[0] : damageValues.armor.beine;
         break;
 }
 
