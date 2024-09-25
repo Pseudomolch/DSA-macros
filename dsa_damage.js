@@ -1,13 +1,14 @@
-// Check if tokens are selected
-let token = null;
+// Check if a token is targeted
+let targetedToken = null;
 let wounds = 0;
 let woundThresholds = [];
 
-if (canvas.tokens.controlled.length > 1) {
-    ui.notifications.error("Mehrere Tokens ausgewählt. Verwende Standard-Makro.");
-} else if (canvas.tokens.controlled.length === 1) {
-    token = canvas.tokens.controlled[0];
-    const actor = token.actor;
+const targets = game.user.targets;
+if (targets.size > 1) {
+    ui.notifications.error("Mehrere Tokens anvisiert. Verwende Standard-Makro.");
+} else if (targets.size === 1) {
+    targetedToken = targets.first();
+    const actor = targetedToken.actor;
 
     // Get constitution and other relevant attributes
     const constitution = actor.system.base.basicAttributes.constitution.value;
@@ -20,6 +21,12 @@ if (canvas.tokens.controlled.length > 1) {
         Math.ceil(constitution) + eisern + glasknochen,
         Math.ceil(constitution * 1.5) + eisern + glasknochen
     ];
+}
+
+// Check for selected token (for default damage value)
+let selectedToken = null;
+if (canvas.tokens.controlled.length === 1) {
+    selectedToken = canvas.tokens.controlled[0];
 }
 
 // Function to parse armor values from the actor's special ability
@@ -45,9 +52,19 @@ function parseArmorValues(actor) {
     };
 }
 
+// Function to get TP value from Meisterperson ability
+function getTPFromMeisterperson(actor) {
+    const meisterpersonAbility = actor.items.find(item => item.type === "specialAbility" && item.name === "Meisterperson");
+    if (!meisterpersonAbility) return null;
+
+    const match = meisterpersonAbility.system.description.match(/TP (.+)$/m);
+    return match ? match[1] : null;
+}
+
 // Prompt the user for the damage formula and modifiers
 let damageValues = await new Promise((resolve) => {
-    let armorValues = token ? parseArmorValues(token.actor) : null;
+    let armorValues = targetedToken ? parseArmorValues(targetedToken.actor) : null;
+    let defaultDamageFormula = selectedToken ? getTPFromMeisterperson(selectedToken.actor) || "" : "";
 
     new Dialog({
         title: "DSA 4.1 Schadenswurf",
@@ -97,7 +114,7 @@ let damageValues = await new Promise((resolve) => {
             <div class="top-row">
                 <div>
                     <label for="damageFormula">Schaden</label>
-                    <input id="damageFormula" type="text" placeholder="z.B. 1W+4" required>
+                    <input id="damageFormula" type="text" placeholder="z.B. 1W+4" value="${defaultDamageFormula}" required>
                 </div>
                 <div>
                     <label for="wuchtschlag">Wucht</label>
@@ -255,7 +272,7 @@ switch (hitLocation) {
 messageContent += `<br><strong>Rüstung:</strong> ${armorValue} ${hitLocation} (${hitLocationRoll.total})`;
 
 // Calculate wounds based on damage and wound thresholds
-if (token && woundThresholds.length > 0) {
+if (targetedToken && woundThresholds.length > 0) {
     let woundsInflicted = 0;
     let damageAfterArmor = Math.max(0, totalDamage - armorValue);
     if (damageAfterArmor > woundThresholds[2]) {
@@ -273,7 +290,7 @@ if (token && woundThresholds.length > 0) {
 } else {
     let damageAfterArmor = Math.max(0, totalDamage - armorValue);
     messageContent += `<br>${damageAfterArmor} <strong>TP</strong>`;
-    if (canvas.tokens.controlled.length == 1) {
+    if (game.user.targets.size == 1) {
         messageContent += ` <a class="apply-damage" data-damage="${damageAfterArmor}"><i class="fas fa-heart"></i></a>`;
     }
 }
@@ -287,7 +304,7 @@ let chatMessage = await ChatMessage.create({
 });
 
 // Add click event listener to the heart icon
-if (token && canvas.tokens.controlled.length === 1) {
+if (targetedToken && game.user.targets.size === 1) {
     setTimeout(() => {
         const messageElement = document.querySelector(`[data-message-id="${chatMessage.id}"]`);
         if (messageElement) {
@@ -296,13 +313,13 @@ if (token && canvas.tokens.controlled.length === 1) {
                 const clickHandler = async (event) => {
                     event.preventDefault();
                     const damage = parseInt(event.currentTarget.dataset.damage);
-                    const currentLeP = token.actor.system.base.resources.vitality.value;
+                    const currentLeP = targetedToken.actor.system.base.resources.vitality.value;
                     const newLeP = Math.max(0, currentLeP - damage);
-                    await token.actor.update({"system.base.resources.vitality.value": newLeP});
+                    await targetedToken.actor.update({"system.base.resources.vitality.value": newLeP});
                     
                     // Create a new chat message for confirmation
                     let confirmationContent = `<div style="background-color: #f0f0f0; border: 1px solid #ccc; padding: 5px; border-radius: 3px;">`;
-                    confirmationContent += `<strong>${damage} Schaden</strong> auf ${token.name} angewendet.`;
+                    confirmationContent += `<strong>${damage} Schaden</strong> auf ${targetedToken.name} angewendet.`;
                     confirmationContent += `<br>Neue LeP: ${newLeP}`;
                     confirmationContent += `</div>`;
                     
