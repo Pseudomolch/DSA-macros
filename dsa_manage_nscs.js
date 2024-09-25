@@ -10,12 +10,14 @@ const actor = token.actor;
 // Function to parse existing NPC data
 function parseExistingNPCData(description) {
     const lines = description.split('\n');
-    if (lines.length === 2) {
-        const [line1, line2] = lines;
+    if (lines.length >= 2) {
+        const [line1, line2, line3] = lines;
         const regex1 = /INI (\d+), PA (\d+), LeP (\d+), RS (\d+), KO (\d+)/;
         const regex2 = /GS (\d+), AuP (\d+), MR (\d+), GW (\d+)/;
+        const regex3 = /Angriff (.+), DK ([A-Z]), AT (\d+), TP (.+)/;
         const match1 = line1.match(regex1);
         const match2 = line2.match(regex2);
+        const match3 = line3 ? line3.match(regex3) : null;
         
         if (match1 && match2) {
             return {
@@ -27,7 +29,11 @@ function parseExistingNPCData(description) {
                 gs: parseInt(match2[1]),
                 aup: parseInt(match2[2]),
                 mr: parseInt(match2[3]),
-                gw: parseInt(match2[4])
+                gw: parseInt(match2[4]),
+                attackName: match3 ? match3[1] : '',
+                dk: match3 ? match3[2] : '',
+                at: match3 ? parseInt(match3[3]) : 0,
+                tp: match3 ? match3[4] : ''
             };
         }
     }
@@ -110,6 +116,24 @@ new Dialog({
                 <input type="number" id="gw" name="gw" value="${existingNPCData?.gw || 0}">
             </div>
         </div>
+        <div class="npc-row">
+            <div>
+                <label for="attackName">Angriff Name</label>
+                <input type="text" id="attackName" name="attackName" value="${existingNPCData?.attackName || ''}">
+            </div>
+            <div>
+                <label for="dk">DK</label>
+                <input type="text" id="dk" name="dk" maxlength="1" value="${existingNPCData?.dk || ''}">
+            </div>
+            <div>
+                <label for="at">AT</label>
+                <input type="number" id="at" name="at" value="${existingNPCData?.at || 0}">
+            </div>
+            <div>
+                <label for="tp">TP</label>
+                <input type="text" id="tp" name="tp" value="${existingNPCData?.tp || ''}">
+            </div>
+        </div>
     </form>
     `,
     buttons: {
@@ -140,7 +164,16 @@ new Dialog({
                     return; // Stop execution if any input is invalid
                 }
 
-                const description = `INI ${ini}, PA ${pa}, LeP ${lep}, RS ${rs}, KO ${ko}\nGS ${gs}, AuP ${aup}, MR ${mr}, GW ${gw}`;
+                const attackName = html.find('[name="attackName"]').val();
+                const dk = html.find('[name="dk"]').val().toUpperCase();
+                const at = parseNumber(html.find('[name="at"]').val());
+                const tp = html.find('[name="tp"]').val();
+
+                let description = `INI ${ini}, PA ${pa}, LeP ${lep}, RS ${rs}, KO ${ko}\nGS ${gs}, AuP ${aup}, MR ${mr}, GW ${gw}`;
+
+                if (attackName && dk && at !== null && tp) {
+                    description += `\nAngriff ${attackName}, DK ${dk}, AT ${at}, TP ${tp}`;
+                }
 
                 // Update or create the special ability
                 if (existingAbility) {
@@ -169,46 +202,17 @@ new Dialog({
                         hasAstralEnergy: false,
                         hasKarmicEnery: false
                     },
-                    "system.base.combatAttributes.active.baseInitiative": ini,
-                    "system.base.combatAttributes.active.baseParry": pa,
+                    "system.base.combatAttributes.active.baseInitiative.value": ini,
+                    "system.base.combatAttributes.active.baseParry.value": pa,
                     "system.base.resources.vitality.value": lep,
                     "system.base.resources.vitality.max": lep,
-                    "system.base.combatAttributes.passive.magicResistance": mr,
+                    "system.base.combatAttributes.passive.magicResistance.value": mr,
                     "system.base.basicAttributes.constitution.value": ko
                 };
 
                 await actor.update(updateData);
 
-                // Debug verification step
-                console.log("Starting debug verification...");
-                const updatedActor = game.actors.get(actor.id);
-                let verificationPassed = true;
-
-                for (let [key, value] of Object.entries(updateData)) {
-                    if (typeof value === 'object') {
-                        for (let [subKey, subValue] of Object.entries(value)) {
-                            const actualValue = getProperty(updatedActor, `${key}.${subKey}`);
-                            if (actualValue !== subValue) {
-                                console.error(`Verification failed for ${key}.${subKey}. Expected: ${subValue}, Actual: ${actualValue}`);
-                                verificationPassed = false;
-                            }
-                        }
-                    } else {
-                        const actualValue = getProperty(updatedActor, key);
-                        if (actualValue !== value) {
-                            console.error(`Verification failed for ${key}. Expected: ${value}, Actual: ${actualValue}`);
-                            verificationPassed = false;
-                        }
-                    }
-                }
-
-                if (verificationPassed) {
-                    console.log("All updates verified successfully!");
-                    ui.notifications.info("Meisterperson gespeichert und Einstellungen aktualisiert.");
-                } else {
-                    console.error("Some updates failed verification. Check the console for details.");
-                    ui.notifications.warn("Einige Änderungen konnten nicht verifiziert werden. Bitte überprüfen Sie die Konsole für Details.");
-                }
+                ui.notifications.info("Meisterperson gespeichert und Einstellungen aktualisiert.");
             }
         },
         cancel: {
