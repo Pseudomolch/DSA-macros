@@ -142,6 +142,7 @@ new Dialog({
 
                 const description = `INI ${ini}, PA ${pa}, LeP ${lep}, RS ${rs}, KO ${ko}\nGS ${gs}, AuP ${aup}, MR ${mr}, GW ${gw}`;
 
+                // Update or create the special ability
                 if (existingAbility) {
                     await existingAbility.update({
                         "system.description": description
@@ -157,7 +158,7 @@ new Dialog({
                 }
 
                 // Update actor settings and attributes
-                await actor.update({
+                const updateData = {
                     "system.settings": {
                         autoCalcBaseAttack: false,
                         autoCalcBaseParry: false,
@@ -168,15 +169,46 @@ new Dialog({
                         hasAstralEnergy: false,
                         hasKarmicEnery: false
                     },
-                    "system.combatAttributes.active.baseInitiative": ini,
-                    "system.combatAttributes.active.baseParry": pa,
-                    "system.status.wounds.value": lep,
-                    "system.status.wounds.max": lep,
-                    "system.combatAttributes.passive.magicResistance": mr,
-                    "system.basicAttributes.constitution.value": ko
-                });
+                    "system.base.combatAttributes.active.baseInitiative": ini,
+                    "system.base.combatAttributes.active.baseParry": pa,
+                    "system.base.resources.vitality.value": lep,
+                    "system.base.resources.vitality.max": lep,
+                    "system.base.combatAttributes.passive.magicResistance": mr,
+                    "system.base.basicAttributes.constitution.value": ko
+                };
 
-                ui.notifications.info("Meisterperson gespeichert und Einstellungen aktualisiert.");
+                await actor.update(updateData);
+
+                // Debug verification step
+                console.log("Starting debug verification...");
+                const updatedActor = game.actors.get(actor.id);
+                let verificationPassed = true;
+
+                for (let [key, value] of Object.entries(updateData)) {
+                    if (typeof value === 'object') {
+                        for (let [subKey, subValue] of Object.entries(value)) {
+                            const actualValue = getProperty(updatedActor, `${key}.${subKey}`);
+                            if (actualValue !== subValue) {
+                                console.error(`Verification failed for ${key}.${subKey}. Expected: ${subValue}, Actual: ${actualValue}`);
+                                verificationPassed = false;
+                            }
+                        }
+                    } else {
+                        const actualValue = getProperty(updatedActor, key);
+                        if (actualValue !== value) {
+                            console.error(`Verification failed for ${key}. Expected: ${value}, Actual: ${actualValue}`);
+                            verificationPassed = false;
+                        }
+                    }
+                }
+
+                if (verificationPassed) {
+                    console.log("All updates verified successfully!");
+                    ui.notifications.info("Meisterperson gespeichert und Einstellungen aktualisiert.");
+                } else {
+                    console.error("Some updates failed verification. Check the console for details.");
+                    ui.notifications.warn("Einige Änderungen konnten nicht verifiziert werden. Bitte überprüfen Sie die Konsole für Details.");
+                }
             }
         },
         cancel: {
