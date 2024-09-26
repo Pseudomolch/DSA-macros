@@ -1,41 +1,44 @@
-// Check if a token is targeted
+// Initialize variables for targeted token and wound thresholds
 let targetedToken = null;
 let wounds = 0;
 let woundThresholds = [];
 
+// Check if a single token is targeted
 const targets = game.user.targets;
-if (targets.size > 1) {
-    ui.notifications.error("Mehrere Tokens anvisiert. Verwende Standard-Makro.");
-} else if (targets.size === 1) {
+if (targets.size === 1) {
     targetedToken = targets.first();
     const actor = targetedToken.actor;
 
-    // Get constitution and other relevant attributes
+    // Get actor attributes
     const constitution = actor.system.base.basicAttributes.constitution.value;
-    const eisern = (actor.items.find(item => item.name === "Eisern") === undefined) ? 0 : 2;
-    const glasknochen = (actor.items.find(item => item.name === "Glasknochen") === undefined) ? 0 : -2;
+    const eisern = actor.items.find(item => item.name === "Eisern") ? 2 : 0;
+    const glasknochen = actor.items.find(item => item.name === "Glasknochen") ? -2 : 0;
 
-    // Check if wound thresholds are defined in actor.system.base.combatAttributes.passive
+    // Set wound thresholds to fallback values
+    woundThresholds = [
+        Math.ceil(constitution / 2) + eisern + glasknochen,
+        Math.ceil(constitution) + eisern + glasknochen,
+        Math.ceil(constitution * 1.5) + eisern + glasknochen
+    ];
+
+    // Get defined wound thresholds if they exist
     const definedWoundThresholds = actor.system.base.combatAttributes.passive.woundThresholds;
-    
-    if (definedWoundThresholds && 
-        definedWoundThresholds.first !== 0 && 
-        definedWoundThresholds.second !== 0 && 
-        definedWoundThresholds.third !== 0) {
+    if (definedWoundThresholds) {
         const mod = definedWoundThresholds.mod || 0;
-        woundThresholds = [
-            definedWoundThresholds.first + mod,
-            definedWoundThresholds.second + mod,
-            definedWoundThresholds.third + mod
-        ];
-    } else {
-        // Calculate wound thresholds if not defined
-        woundThresholds = [
-            Math.ceil(constitution / 2) + eisern + glasknochen,
-            Math.ceil(constitution) + eisern + glasknochen,
-            Math.ceil(constitution * 1.5) + eisern + glasknochen
-        ];
+
+        // Overwrite wound thresholds with defined values if they exist and are non-zero
+        const thresholdKeys = ['first', 'second', 'third'];
+        thresholdKeys.forEach((key, index) => {
+            if (definedWoundThresholds.hasOwnProperty(key) && 
+                typeof definedWoundThresholds[key] === 'number' && 
+                definedWoundThresholds[key] !== 0) {
+                woundThresholds[index] = definedWoundThresholds[key] + mod;
+            }
+        });
     }
+} else if (targets.size > 1) {
+    // Show error if multiple tokens are targeted
+    ui.notifications.error("Mehrere Tokens anvisiert. Verwende Standard-Makro.");
 }
 
 // Check for selected token (for default damage value)
