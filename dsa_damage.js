@@ -15,12 +15,27 @@ if (targets.size > 1) {
     const eisern = (actor.items.find(item => item.name === "Eisern") === undefined) ? 0 : 2;
     const glasknochen = (actor.items.find(item => item.name === "Glasknochen") === undefined) ? 0 : -2;
 
-    // Calculate wound thresholds
-    woundThresholds = [
-        Math.ceil(constitution / 2) + eisern + glasknochen,
-        Math.ceil(constitution) + eisern + glasknochen,
-        Math.ceil(constitution * 1.5) + eisern + glasknochen
-    ];
+    // Check if wound thresholds are defined in actor.system.base.combatAttributes.passive
+    const definedWoundThresholds = actor.system.base.combatAttributes.passive.woundThresholds;
+    
+    if (definedWoundThresholds && 
+        definedWoundThresholds.first !== 0 && 
+        definedWoundThresholds.second !== 0 && 
+        definedWoundThresholds.third !== 0) {
+        const mod = definedWoundThresholds.mod || 0;
+        woundThresholds = [
+            definedWoundThresholds.first + mod,
+            definedWoundThresholds.second + mod,
+            definedWoundThresholds.third + mod
+        ];
+    } else {
+        // Calculate wound thresholds if not defined
+        woundThresholds = [
+            Math.ceil(constitution / 2) + eisern + glasknochen,
+            Math.ceil(constitution) + eisern + glasknochen,
+            Math.ceil(constitution * 1.5) + eisern + glasknochen
+        ];
+    }
 }
 
 // Check for selected token (for default damage value)
