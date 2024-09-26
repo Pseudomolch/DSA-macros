@@ -107,66 +107,78 @@ async function addWoundEffect(location, side = "", count = 1) {
     const effect = woundEffects[location];
     if (!effect) return;
 
-    const sideText = {
+    const sideText = getSideText(location, side);
+    const label = getWoundLabel(count, sideText);
+
+    const existingEffect = findExistingEffect(location, side);
+    if (existingEffect) {
+        const match = existingEffect.data.label.match(/(\d+)/);
+        const currentCount = match ? parseInt(match[1]) : 0;
+        count = Math.min(currentCount + count, 3);
+        await updateExistingEffect(existingEffect, effect, label, count);
+    } else {
+        await createNewEffect(effect, label, location, side, count);
+    }
+
+    await createChatMessage(effect, count, sideText);
+}
+
+function getSideText(location, side) {
+    const sideTexts = {
         kopf: "am Kopf",
         brust: "an der Brust",
         bauch: "am Bauch",
         arm: side ? `am ${side}en Arm` : "am Arm",
         bein: side ? `am ${side}en Bein` : "am Bein"
-    }[location] || "an der ";
+    };
+    return sideTexts[location] || "an der ";
+}
 
-    let label = `${count} Wunde${count > 1 ? 'n' : ''} ${sideText}`;
+function getWoundLabel(count, sideText) {
+    return `${count} Wunde${count > 1 ? 'n' : ''} ${sideText}`;
+}
 
-    // Check for existing wound effect
-    const existingEffect = targetedToken.actor.effects.find(e => e.data.flags.core?.statusId === `wound_${location}${side}`);
-    let newCount = count;
+function findExistingEffect(location, side) {
+    return targetedToken.actor.effects.find(e => e.data.flags.core?.statusId === `wound_${location}${side}`);
+}
 
-    if (existingEffect) {
-        // Extract the current count from the label
-        const match = existingEffect.data.label.match(/(\d+)/);
-        const currentCount = match ? parseInt(match[1]) : 0;
-        newCount = Math.min(currentCount + count, 3); // Ensure the count does not exceed 3
-        label = `${newCount} Wunde${newCount > 1 ? 'n' : ''} ${sideText}`;
+async function updateExistingEffect(existingEffect, effect, label, count) {
+    await existingEffect.update({
+        label: getWoundLabel(count, label.split(' ').slice(2).join(' ')),
+        changes: getEffectChanges(effect, count)
+    });
+}
 
-        // Update the existing effect
-        await existingEffect.update({
-            label: label,
-            changes: effect.changes.map(change => ({
-                ...change,
-                value: change.value * Math.min(newCount, 2) // Cap the value at 2 wounds
-            }))
-        });
-    } else {
-        // Create a new effect
-        const newEffect = {
-            label: label,
-            icon: effect.icon,
-            changes: effect.changes.map(change => ({
-                ...change,
-                value: change.value * Math.min(count, 2) // Cap the value at 2 wounds
-            })),
-            flags: {
-                core: {
-                    statusId: `wound_${location}${side}`
-                }
-            }
-        };
+async function createNewEffect(effect, label, location, side, count) {
+    const newEffect = {
+        label: label,
+        icon: effect.icon,
+        changes: getEffectChanges(effect, count),
+        flags: { core: { statusId: `wound_${location}${side}` } }
+    };
 
-        await targetedToken.actor.createEmbeddedDocuments("ActiveEffect", [newEffect]);
-    }
+    await targetedToken.actor.createEmbeddedDocuments("ActiveEffect", [newEffect]);
+}
 
-    // Generate chat message
-    const descriptions = effect.baseDescriptions.map(desc => `${desc.attribute} ${desc.value * Math.min(newCount, 2)}`).join(", ");
-    const finalDescription = newCount === 3 ? `${descriptions}; ${effect.thirdWoundDescription}` : descriptions;
+function getEffectChanges(effect, count) {
+    return effect.changes.map(change => ({
+        ...change,
+        value: change.value * Math.min(count, 2)
+    }));
+}
+
+async function createChatMessage(effect, count, sideText) {
+    const descriptions = effect.baseDescriptions.map(desc => `${desc.attribute} ${desc.value * Math.min(count, 2)}`).join(", ");
 
     const messageContent = `
         <div style="background-color: #f0f0f0; border: 1px solid #ccc; padding: 5px; border-radius: 3px;">
-            <strong>${targetedToken.name}</strong> hat ${newCount} Wunde${newCount > 1 ? 'n' : ''} ${sideText} erlitten.<br>
-            <strong>Effekte:</strong> ${finalDescription}
+            <strong>${targetedToken.name}</strong>: ${count} Wunde${count > 1 ? 'n' : ''} ${sideText}<br>
+            <strong>Effekte:</strong> ${descriptions}
+            ${count === 3 ? `<br><span style="color: red;">${effect.thirdWoundDescription}</span>` : ''}
         </div>
     `;
 
-    ChatMessage.create({
+    await ChatMessage.create({
         speaker: ChatMessage.getSpeaker({ token: targetedToken }),
         content: messageContent
     });
@@ -200,16 +212,14 @@ new Dialog({
             icon: '<i class="fas fa-check"></i>',
             label: "Anwenden",
             callback: async (html) => {
-                const count = parseInt(html.find('[name="anzahlWunden"]').val());
+                const count = Math.min(parseInt(html.find('[name="anzahlWunden"]').val()), 3);
                 const location = html.find('[name="trefferzone"]').val();
 
-                if (location === "armLinks" || location === "armRechts") {
-                    await addWoundEffect("arm", location === "armLinks" ? "link" : "recht", count);
-                } else if (location === "beinLinks" || location === "beinRechts") {
-                    await addWoundEffect("bein", location === "beinLinks" ? "link" : "recht", count);
-                } else {
-                    await addWoundEffect(location, "", count);
-                }
+                const [baseLocation, side] = location.includes('Links') || location.includes('Rechts')
+                    ? [location.replace('Links', '').replace('Rechts', ''), location.includes('Links') ? 'link' : 'recht']
+                    : [location, ''];
+
+                await addWoundEffect(baseLocation, side, count);
             }
         },
         cancel: {
