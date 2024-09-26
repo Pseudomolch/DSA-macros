@@ -5,7 +5,11 @@ if (canvas.tokens.controlled.length !== 1) {
 }
 
 const token = canvas.tokens.controlled[0];
-const actor = token.actor;
+const tokenActor = token.actor;
+const originalActor = game.actors.get(tokenActor.id);
+
+// Use originalActor instead of actor in the rest of the code
+const actor = originalActor;
 
 // Function to parse existing NPC data
 function parseExistingNPCData(description) {
@@ -177,11 +181,12 @@ new Dialog({
 
                 // Update or create the special ability
                 if (existingAbility) {
-                    await existingAbility.update({
+                    await originalActor.updateEmbeddedDocuments("Item", [{
+                        _id: existingAbility.id,
                         "system.description": description
-                    });
+                    }]);
                 } else {
-                    await actor.createEmbeddedDocuments("Item", [{
+                    await originalActor.createEmbeddedDocuments("Item", [{
                         name: "Meisterperson",
                         type: "specialAbility",
                         system: {
@@ -210,7 +215,7 @@ new Dialog({
                     "system.base.basicAttributes.constitution.value": ko
                 };
 
-                await actor.update(updateData);
+                await originalActor.update(updateData);
 
                 ui.notifications.info("Meisterperson gespeichert und Einstellungen aktualisiert.");
             }
