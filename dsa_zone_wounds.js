@@ -1,3 +1,4 @@
+// This does not do -2W6 Initiative or +1W6 SP. TODO: Those effects should be added to the damage macro.
 // Check if exactly one token is targeted
 if (game.user.targets.size !== 1) {
     ui.notifications.error("Bitte wähle genau einen Token aus.");
