@@ -165,16 +165,16 @@ if (targetedToken && woundThresholds.length > 0) {
         woundsInflicted = 1;
     }
     
-    messageContent += `<br>${damageAfterArmor} <strong>TP</strong> <a class="apply-damage" data-damage="${damageAfterArmor}"><i class="fas fa-heart"></i></a>`;
+    messageContent += `<br>${damageAfterArmor} <strong>TP</strong> <a class="apply-damage" data-damage="${damageAfterArmor}">🩸</a>`;
     if (woundsInflicted > 0) {
         messageContent += `, ${woundsInflicted} <strong>${woundsInflicted === 1 ? 'Wunde' : 'Wunden'}</strong>`;
-        messageContent += ` <a class="apply-wounds" data-wounds="${woundsInflicted}" data-location="${hitLocation}">⚔</a>`;
+        messageContent += ` <a class="apply-wounds" data-wounds="${woundsInflicted}" data-location="${hitLocation}">🩹</a>`;
     }
 } else {
     let damageAfterArmor = Math.max(0, totalDamage - armorValue);
     messageContent += `<br>${damageAfterArmor} <strong>TP</strong>`;
     if (game.user.targets.size == 1) {
-        messageContent += ` <a class="apply-damage" data-damage="${damageAfterArmor}"><i class="fas fa-heart"></i></a>`;
+        messageContent += ` <a class="apply-damage" data-damage="${damageAfterArmor}">🩸</a>`;
     }
 }
 

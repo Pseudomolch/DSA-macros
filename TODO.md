@@ -8,6 +8,7 @@ Changelog:
 - Tested Attack macro, confirmed it correctly calls Damage macro, and fixed related errors.
 - Implemented wound application from Damage macro to Zone Wounds macro with clickable icon.
 - Removed "Mit Wuchtschlag (x)" text from the Attack macro output.
+- Updated icons in Damage macro: now using blood drop (🩸) for damage and adhesive bandage (🩹) for wounds.
 
 ## 1. Split Dialogs into Separate Macros
 - [x] Create a new macro called "DamageDialog"
@@ -41,7 +42,7 @@ Changelog:
 
 ## 4. Add some macros and functionality
 - [x] We no longer need to say "Mit Wuchtschlag (x)" in the Attack macro behind the Erfolg line.
-- [ ] We should choose a different icon for the clickable Wounds icon in the Damage macro.
+- [x] We should choose a different icon for the clickable Wounds icon in the Damage macro.
 - [ ] We should address the remaining TODOs in the Wounds macro.
   - [ ] We should decrease the Initiative for the token by -2W6 if a newly applied first or second Kopfwunde is rolled. Needs a new line in the output that says how much Initiative was lost.
   - [ ] We should roll additional damage if a Bauchwunde is applied, 1W6 extra for each newly applied (!) first or second Bauchwunde. Needs a new line in the output that shows how much additional damage was rolled.
