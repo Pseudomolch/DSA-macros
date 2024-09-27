@@ -198,7 +198,7 @@ if (typeof executeWoundsDialog !== 'function') {
     return;
 }
 
-let woundValues = await executeWoundsDialog({targetedToken});
+let woundValues = await executeWoundsDialog();
 
 // If woundValues is null or undefined, exit the macro
 if (!woundValues) return;

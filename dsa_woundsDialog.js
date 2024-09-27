@@ -71,7 +71,9 @@ async function createWoundsDialog(targetedToken) {
 }
 
 // Execute the dialog and return the result
-async function executeWoundsDialog({targetedToken}) {
+async function executeWoundsDialog() {
+    // Get the targeted token
+    const targetedToken = game.user.targets.first();
     let woundValues = await createWoundsDialog(targetedToken);
     return woundValues;
 }
