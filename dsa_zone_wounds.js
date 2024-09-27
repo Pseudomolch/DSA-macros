@@ -185,48 +185,26 @@ async function createChatMessage(effect, count, sideText) {
     });
 }
 
-// Create dialog for wound selection
-new Dialog({
-    title: "Wunden hinzufügen",
-    content: `
-        <form>
-            <div class="form-group">
-                <label>Anzahl der Wunden:</label>
-                <input type="number" name="anzahlWunden" min="1" max="3" value="1">
-            </div>
-            <div class="form-group">
-                <label>Trefferzone:</label>
-                <select name="trefferzone">
-                    <option value="kopf">Kopf</option>
-                    <option value="brust">Brust</option>
-                    <option value="bauch">Bauch</option>
-                    <option value="armLinks">Linker Arm</option>
-                    <option value="armRechts">Rechter Arm</option>
-                    <option value="beinLinks">Linkes Bein</option>
-                    <option value="beinRechts">Rechtes Bein</option>
-                </select>
-            </div>
-        </form>
-    `,
-    buttons: {
-        apply: {
-            icon: '<i class="fas fa-check"></i>',
-            label: "Anwenden",
-            callback: async (html) => {
-                const count = Math.min(parseInt(html.find('[name="anzahlWunden"]').val()), 3);
-                const location = html.find('[name="trefferzone"]').val();
+// Call the WoundsDialog macro to get input values
+let woundsDialogMacro = game.macros.getName("dsa_woundsDialog");
+if (!woundsDialogMacro) {
+    ui.notifications.error("dsa_woundsDialog macro not found");
+    return;
+}
 
-                const [baseLocation, side] = location.includes('Links') || location.includes('Rechts')
-                    ? [location.replace('Links', '').replace('Rechts', ''), location.includes('Links') ? 'link' : 'recht']
-                    : [location, ''];
+let executeWoundsDialog = await woundsDialogMacro.execute();
+if (typeof executeWoundsDialog !== 'function') {
+    ui.notifications.error("dsa_woundsDialog macro did not return a function");
+    return;
+}
 
-                await addWoundEffect(baseLocation, side, count);
-            }
-        },
-        cancel: {
-            icon: '<i class="fas fa-times"></i>',
-            label: "Abbrechen"
-        }
-    },
-    default: "apply"
-}).render(true);
+let woundValues = await executeWoundsDialog({targetedToken});
+
+// If woundValues is null or undefined, exit the macro
+if (!woundValues) return;
+
+const [baseLocation, side] = woundValues.location.includes('Links') || woundValues.location.includes('Rechts')
+    ? [woundValues.location.replace('Links', '').replace('Rechts', ''), woundValues.location.includes('Links') ? 'link' : 'recht']
+    : [woundValues.location, ''];
+
+await addWoundEffect(baseLocation, side, woundValues.count);
