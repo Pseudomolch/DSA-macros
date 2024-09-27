@@ -60,7 +60,18 @@ if (typeof executeDamageDialog !== 'function') {
     return;
 }
 
-let damageValues = await executeDamageDialog({targetedToken, selectedToken});
+// Get the parameters passed from the attack macro, if any
+let attackParams = {};
+if (args && args.length > 0 && typeof args[0] === 'object') {
+    attackParams = args[0];
+}
+
+let damageValues = await executeDamageDialog({
+    targetedToken, 
+    selectedToken, 
+    kritisch: attackParams.kritisch || false,
+    wuchtschlag: attackParams.wuchtschlag || 0
+});
 
 // If damageValues is null or undefined, exit the macro
 if (!damageValues) return;

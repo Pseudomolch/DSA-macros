@@ -160,6 +160,11 @@ if (naturalRoll === 1 || naturalRoll === 20) {
 
 messageContent += `<span style="color: ${result.includes("Erfolg") ? "green" : "red"};">${result}</span>`;
 
+// Add clickable icon for successful attacks
+if (result.includes("Erfolg")) {
+    messageContent += ` <a class="call-damage" data-crit="${result === "Kritischer Erfolg"}" data-wuchtschlag="${attackValues.wuchtschlag}">⚔️</a>`;
+}
+
 if (attackValues.finte > 0 && result.includes("Erfolg")) {
     messageContent += `<br>Mit Finte (${attackValues.finte})`;
 }
@@ -169,7 +174,42 @@ if (attackValues.wuchtschlag > 0 && result.includes("Erfolg")) {
 messageContent += `</div>`;
 
 // Send the result to the chat
-ChatMessage.create({
+let chatMessage = await ChatMessage.create({
     speaker: ChatMessage.getSpeaker(),
     content: messageContent
 });
+
+// Add click event listener to the damage icon
+if (result.includes("Erfolg")) {
+    setTimeout(() => {
+        const messageElement = document.querySelector(`[data-message-id="${chatMessage.id}"]`);
+        if (messageElement) {
+            const callDamageButton = messageElement.querySelector('.call-damage');
+            if (callDamageButton) {
+                const clickHandler = async (event) => {
+                    event.preventDefault();
+                    const isCrit = event.currentTarget.dataset.crit === "true";
+                    const wuchtschlag = parseInt(event.currentTarget.dataset.wuchtschlag);
+
+                    // Call the damage macro
+                    let damageMacro = game.macros.getName("dsa_damage");
+                    if (damageMacro) {
+                        await damageMacro.execute({
+                            kritisch: isCrit,
+                            wuchtschlag: wuchtschlag
+                        });
+                    } else {
+                        ui.notifications.error("dsa_damage macro not found");
+                    }
+                };
+
+                callDamageButton.addEventListener('click', clickHandler);
+
+                // Clean up the event listener when the message is deleted
+                Hooks.once(`deleteMessage${chatMessage.id}`, () => {
+                    callDamageButton.removeEventListener('click', clickHandler);
+                });
+            }
+        }
+    }, 100);
+}
