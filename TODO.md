@@ -1,17 +1,20 @@
 # TODO: Enhance Macro Functionality
 
+Changelog:
+- Created DamageDialog macro and updated Damage macro to use it.
+
 ## 1. Split Dialogs into Separate Macros
-- [ ] Create a new macro called "DamageDialog"
-  - [ ] Move the dialog portion from the Damage macro to DamageDialog
-  - [ ] Ensure DamageDialog returns the necessary input values
+- [x] Create a new macro called "DamageDialog"
+  - [x] Move the dialog portion from the Damage macro to DamageDialog
+  - [x] Ensure DamageDialog returns the necessary input values
 - [ ] Create a new macro called "WoundsDialog"
   - [ ] Move the dialog portion from the Wounds macro to WoundsDialog
   - [ ] Ensure WoundsDialog returns the necessary input values
 
 ## 2. Modify Existing Macros
-- [ ] Update the Damage macro
-  - [ ] Remove the dialog portion
-  - [ ] Add a call to DamageDialog to get input values
+- [x] Update the Damage macro
+  - [x] Remove the dialog portion
+  - [x] Add a call to DamageDialog to get input values
   - [ ] Implement logic to call the Wounds macro with the result
 - [ ] Update the Wounds macro
   - [ ] Remove the dialog portion
