@@ -168,6 +168,7 @@ if (targetedToken && woundThresholds.length > 0) {
     messageContent += `<br>${damageAfterArmor} <strong>TP</strong> <a class="apply-damage" data-damage="${damageAfterArmor}"><i class="fas fa-heart"></i></a>`;
     if (woundsInflicted > 0) {
         messageContent += `, ${woundsInflicted} <strong>${woundsInflicted === 1 ? 'Wunde' : 'Wunden'}</strong>`;
+        messageContent += ` <a class="apply-wounds" data-wounds="${woundsInflicted}" data-location="${hitLocation}">⚔</a>`;
     }
 } else {
     let damageAfterArmor = Math.max(0, totalDamage - armorValue);
@@ -185,11 +186,12 @@ let chatMessage = await ChatMessage.create({
     content: messageContent
 });
 
-// Add click event listener to the heart icon
+// Add click event listeners to the heart icon and wound symbol
 if (targetedToken && game.user.targets.size === 1) {
     setTimeout(() => {
         const messageElement = document.querySelector(`[data-message-id="${chatMessage.id}"]`);
         if (messageElement) {
+            // Existing code for apply damage button
             const applyDamageButton = messageElement.querySelector('.apply-damage');
             if (applyDamageButton) {
                 const clickHandler = async (event) => {
@@ -216,6 +218,34 @@ if (targetedToken && game.user.targets.size === 1) {
                 // Clean up the event listener when the message is deleted
                 Hooks.once(`deleteMessage${chatMessage.id}`, () => {
                     applyDamageButton.removeEventListener('click', clickHandler);
+                });
+            }
+
+            // New code for apply wounds button
+            const applyWoundsButton = messageElement.querySelector('.apply-wounds');
+            if (applyWoundsButton) {
+                const woundsClickHandler = async (event) => {
+                    event.preventDefault();
+                    const wounds = parseInt(event.currentTarget.dataset.wounds);
+                    const location = event.currentTarget.dataset.location;
+                    
+                    // Set the flag for the wounds macro
+                    await game.user.setFlag("world", "macroData", { wounds, location: hitLocation, autoApply: true });
+                    
+                    // Call the wounds macro
+                    let woundsMacro = game.macros.getName("dsa_zone_wounds");
+                    if (woundsMacro) {
+                        woundsMacro.execute();
+                    } else {
+                        ui.notifications.error("dsa_zone_wounds macro not found");
+                    }
+                };
+
+                applyWoundsButton.addEventListener('click', woundsClickHandler);
+
+                // Clean up the event listener when the message is deleted
+                Hooks.once(`deleteMessage${chatMessage.id}`, () => {
+                    applyWoundsButton.removeEventListener('click', woundsClickHandler);
                 });
             }
         }

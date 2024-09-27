@@ -6,6 +6,7 @@ Changelog:
 - Created WoundsDialog macro and updated Zone Wounds macro to use it.
 - Updated Attack macro to include a clickable icon for calling the Damage macro.
 - Tested Attack macro, confirmed it correctly calls Damage macro, and fixed related errors.
+- Implemented wound application from Damage macro to Zone Wounds macro with clickable icon.
 
 ## 1. Split Dialogs into Separate Macros
 - [x] Create a new macro called "DamageDialog"
@@ -20,7 +21,7 @@ Changelog:
   - [x] Remove the dialog portion
   - [x] Add a call to DamageDialog to get input values
   - [x] Implement logic to accept parameters from Attack macro
-  - [ ] Implement logic to call the Wounds macro with the result
+  - [x] Implement logic to call the Wounds macro with the result
 - [x] Update the Wounds macro
   - [x] Remove the dialog portion
   - [x] Add a call to WoundsDialog to get input values
@@ -30,9 +31,9 @@ Changelog:
   - [x] Pass critical hit and Wuchtschlag information to Damage macro
 
 ## 3. Implement Macro Chaining
-- [ ] In the Damage macro:
-  - [ ] After calculating damage, call the Wounds macro
-  - [ ] Pass the damage result and hit location to the Wounds macro
+- [x] In the Damage macro:
+  - [x] After calculating damage, call the Wounds macro
+  - [x] Pass the damage result and hit location to the Wounds macro
 - [x] In the Attack macro:
   - [x] After determining a successful hit, provide option to call the Damage macro
   - [x] Pass relevant attack information to the Damage macro
@@ -44,8 +45,8 @@ Changelog:
 
 ## 5. Testing
 - [x] Test the Attack macro to ensure it correctly calls Damage
-- [ ] Test the Damage macro to ensure it correctly calls Wounds
-- [ ] Verify that dialog inputs are correctly passed between macros
+- [x] Test the Damage macro to ensure it correctly calls Wounds
+- [x] Verify that dialog inputs are correctly passed between macros
 - [ ] Test edge cases and error handling
 
 ## 6. Documentation

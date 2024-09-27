@@ -105,23 +105,32 @@ const woundEffects = {
 
 // Function to add wound effect
 async function addWoundEffect(location, side = "", count = 1) {
+    console.log("Adding wound effect:", location, side, count);
     const effect = woundEffects[location];
-    if (!effect) return;
+    if (!effect) {
+        console.error("No effect found for location:", location);
+        return;
+    }
 
     const sideText = getSideText(location, side);
     const label = getWoundLabel(count, sideText);
 
+    console.log("Wound effect details:", { sideText, label });
+
     const existingEffect = findExistingEffect(location, side);
     if (existingEffect) {
+        console.log("Updating existing effect");
         const match = existingEffect.data.label.match(/(\d+)/);
         const currentCount = match ? parseInt(match[1]) : 0;
         count = Math.min(currentCount + count, 3);
         await updateExistingEffect(existingEffect, effect, label, count);
     } else {
+        console.log("Creating new effect");
         await createNewEffect(effect, label, location, side, count);
     }
 
     await createChatMessage(effect, count, sideText);
+    console.log("Wound effect process completed");
 }
 
 function getSideText(location, side) {
@@ -185,26 +194,77 @@ async function createChatMessage(effect, count, sideText) {
     });
 }
 
-// Call the WoundsDialog macro to get input values
-let woundsDialogMacro = game.macros.getName("dsa_woundsDialog");
-if (!woundsDialogMacro) {
-    ui.notifications.error("dsa_woundsDialog macro not found");
-    return;
+// Function to normalize location
+function normalizeLocation(location) {
+    location = location.toLowerCase();
+    if (location.includes("kopf")) return "kopf";
+    if (location.includes("brust")) return "brust";
+    if (location.includes("bauch")) return "bauch";
+    if (location.includes("arm")) return "arm";
+    if (location.includes("bein")) return "bein";
+    return location;
 }
 
-let executeWoundsDialog = await woundsDialogMacro.execute();
-if (typeof executeWoundsDialog !== 'function') {
-    ui.notifications.error("dsa_woundsDialog macro did not return a function");
-    return;
-}
+// Check if we're auto-applying wounds from the damage macro
+let autoApplyData = game.user.getFlag("world", "macroData");
+let woundValues;
 
-let woundValues = await executeWoundsDialog();
+if (autoApplyData && autoApplyData.autoApply) {
+    woundValues = {
+        location: autoApplyData.location,
+        count: autoApplyData.wounds
+    };
+    console.log("Wound values from auto-apply:", woundValues);
+    // Clear the flag after use
+    await game.user.unsetFlag("world", "macroData");
+} else {
+    // Call the WoundsDialog macro to get input values
+    let woundsDialogMacro = game.macros.getName("dsa_woundsDialog");
+    if (!woundsDialogMacro) {
+        ui.notifications.error("dsa_woundsDialog macro not found");
+        return;
+    }
+
+    let executeWoundsDialog = await woundsDialogMacro.execute();
+    if (typeof executeWoundsDialog !== 'function') {
+        ui.notifications.error("dsa_woundsDialog macro did not return a function");
+        return;
+    }
+
+    woundValues = await executeWoundsDialog();
+}
 
 // If woundValues is null or undefined, exit the macro
-if (!woundValues) return;
+if (!woundValues) {
+    console.log("No wound values, exiting macro");
+    return;
+}
 
-const [baseLocation, side] = woundValues.location.includes('Links') || woundValues.location.includes('Rechts')
-    ? [woundValues.location.replace('Links', '').replace('Rechts', ''), woundValues.location.includes('Links') ? 'link' : 'recht']
-    : [woundValues.location, ''];
+console.log("Wound values before parsing:", woundValues);
 
-await addWoundEffect(baseLocation, side, woundValues.count);
+// Parse the location and side
+let baseLocation = normalizeLocation(woundValues.location);
+let side = "";
+
+if (woundValues.location.toLowerCase().includes("links")) {
+    side = "link";
+} else if (woundValues.location.toLowerCase().includes("rechts")) {
+    side = "recht";
+}
+
+console.log("Parsed location:", baseLocation, "Side:", side);
+
+// Ensure the baseLocation is valid
+if (!woundEffects[baseLocation]) {
+    console.error("Invalid wound location:", baseLocation);
+    ui.notifications.error(`Invalid wound location: ${baseLocation}`);
+    return;
+}
+
+try {
+    await addWoundEffect(baseLocation, side, woundValues.count);
+    console.log("Wound effect added successfully");
+} catch (error) {
+    console.error("Error adding wound effect:", error);
+    ui.notifications.error("Error adding wound effect");
+}
