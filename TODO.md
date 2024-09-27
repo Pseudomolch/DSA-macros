@@ -5,6 +5,7 @@ Changelog:
 - Fixed issues with macro execution and parameter passing between Damage and DamageDialog macros.
 - Created WoundsDialog macro and updated Zone Wounds macro to use it.
 - Updated Attack macro to include a clickable icon for calling the Damage macro.
+- Tested Attack macro, confirmed it correctly calls Damage macro, and fixed related errors.
 
 ## 1. Split Dialogs into Separate Macros
 - [x] Create a new macro called "DamageDialog"
@@ -42,7 +43,7 @@ Changelog:
 - [ ] Handle cases where a called macro returns unexpected results
 
 ## 5. Testing
-- [ ] Test the Attack macro to ensure it correctly calls Damage
+- [x] Test the Attack macro to ensure it correctly calls Damage
 - [ ] Test the Damage macro to ensure it correctly calls Wounds
 - [ ] Verify that dialog inputs are correctly passed between macros
 - [ ] Test edge cases and error handling

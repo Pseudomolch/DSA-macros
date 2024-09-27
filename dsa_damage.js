@@ -1,12 +1,9 @@
 // Initialize variables for targeted token and wound thresholds
-let targetedToken = null;
+let targetedToken = game.user.targets.first();
 let wounds = 0;
 let woundThresholds = [];
 
-// Check if a single token is targeted
-const targets = game.user.targets;
-if (targets.size === 1) {
-    targetedToken = targets.first();
+if (targetedToken) {
     const actor = targetedToken.actor;
 
     // Get actor attributes
@@ -36,16 +33,16 @@ if (targets.size === 1) {
             }
         });
     }
-} else if (targets.size > 1) {
-    // Show error if multiple tokens are targeted
-    ui.notifications.error("Mehrere Tokens anvisiert. Verwende Standard-Makro.");
+} else {
+    // Show error if no token is targeted
+    ui.notifications.error("Kein Token anvisiert. Verwende Standard-Makro.");
 }
 
 // Check for selected token (for default damage value)
-let selectedToken = null;
-if (canvas.tokens.controlled.length === 1) {
-    selectedToken = canvas.tokens.controlled[0];
-}
+let selectedToken = canvas.tokens.controlled[0];
+
+// Initialize attackParams
+let attackParams = game.user.getFlag("world", "macroData") || { kritisch: false, wuchtschlag: 0 };
 
 // Call the DamageDialog macro to get input values
 let damageDialogMacro = game.macros.getName("dsa_damageDialog");
@@ -60,18 +57,7 @@ if (typeof executeDamageDialog !== 'function') {
     return;
 }
 
-// Get the parameters passed from the attack macro, if any
-let attackParams = {};
-if (args && args.length > 0 && typeof args[0] === 'object') {
-    attackParams = args[0];
-}
-
-let damageValues = await executeDamageDialog({
-    targetedToken, 
-    selectedToken, 
-    kritisch: attackParams.kritisch || false,
-    wuchtschlag: attackParams.wuchtschlag || 0
-});
+let damageValues = await executeDamageDialog();
 
 // If damageValues is null or undefined, exit the macro
 if (!damageValues) return;

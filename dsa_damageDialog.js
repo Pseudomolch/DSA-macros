@@ -48,8 +48,21 @@ function getTPFromMeisterperson(actor) {
     return match ? match[1] : null;
 }
 
+// Function to parse armor value
+function parseArmorValue(value) {
+    if (value.includes('/')) {
+        return value.split('/').map(Number);
+    }
+    return parseInt(value) || 0;
+}
+
 // Main function to create and return the dialog
-async function createDamageDialog(targetedToken, selectedToken) {
+async function createDamageDialog(kritisch, wuchtschlag) {
+    console.log(`dsa_damageDialog.js: Creating dialog with wuchtschlag: ${wuchtschlag}`);
+
+    let targetedToken = game.user.targets.first();
+    let selectedToken = canvas.tokens.controlled[0];
+
     let armorValues = targetedToken ? parseArmorValues(targetedToken.actor) : null;
     let defaultDamageFormula = selectedToken ? getTPFromMeisterperson(selectedToken.actor) || "" : "";
 
@@ -106,11 +119,11 @@ async function createDamageDialog(targetedToken, selectedToken) {
                     </div>
                     <div>
                         <label for="wuchtschlag">Wucht</label>
-                        <input id="wuchtschlag" type="number" value="0">
+                        <input id="wuchtschlag" type="number" value="${wuchtschlag}">
                     </div>
                     <div class="crit-container">
                         <label for="kritisch">Krit</label>
-                        <input id="kritisch" type="checkbox">
+                        <input id="kritisch" type="checkbox" ${kritisch ? 'checked' : ''}>
                     </div>
                 </div>
                 <div class="armor-row">
@@ -141,12 +154,7 @@ async function createDamageDialog(targetedToken, selectedToken) {
                 roll: {
                     label: "Würfeln",
                     callback: (html) => {
-                        const parseArmorValue = (value) => {
-                            const parts = value.split('/').map(Number);
-                            return parts.length === 1 ? parts[0] : parts;
-                        };
-
-                        resolve({
+                        const result = {
                             damageFormula: html.find('#damageFormula')[0].value,
                             wuchtschlag: parseInt(html.find('#wuchtschlag')[0].value) || 0,
                             kritisch: html.find('#kritisch')[0].checked,
@@ -157,7 +165,9 @@ async function createDamageDialog(targetedToken, selectedToken) {
                                 bauch: parseInt(html.find('#bauch')[0].value) || 0,
                                 beine: parseArmorValue(html.find('#beine')[0].value)
                             }
-                        });
+                        };
+                        console.log(`dsa_damageDialog.js: Dialog result:`, result);
+                        resolve(result);
                     }
                 }
             },
@@ -170,8 +180,11 @@ async function createDamageDialog(targetedToken, selectedToken) {
 }
 
 // Execute the dialog and return the result
-async function executeDamageDialog({targetedToken, selectedToken}) {
-    let damageValues = await createDamageDialog(targetedToken, selectedToken);
+async function executeDamageDialog() {
+    let macroData = game.user.getFlag("world", "macroData");
+    let { kritisch, wuchtschlag } = macroData || {};
+    console.log(`dsa_damageDialog.js: executeDamageDialog called with wuchtschlag: ${wuchtschlag}`);
+    let damageValues = await createDamageDialog(kritisch, wuchtschlag);
     return damageValues;
 }
 

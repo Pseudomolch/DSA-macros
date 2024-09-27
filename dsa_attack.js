@@ -179,7 +179,7 @@ let chatMessage = await ChatMessage.create({
     content: messageContent
 });
 
-// Add click event listener to the damage icon
+// Modify the click event listener for the damage icon
 if (result.includes("Erfolg")) {
     setTimeout(() => {
         const messageElement = document.querySelector(`[data-message-id="${chatMessage.id}"]`);
@@ -189,17 +189,27 @@ if (result.includes("Erfolg")) {
                 const clickHandler = async (event) => {
                     event.preventDefault();
                     const isCrit = event.currentTarget.dataset.crit === "true";
-                    const wuchtschlag = parseInt(event.currentTarget.dataset.wuchtschlag);
+                    const wuchtschlag = parseInt(event.currentTarget.dataset.wuchtschlag) || 0;
 
-                    // Call the damage macro
-                    let damageMacro = game.macros.getName("dsa_damage");
-                    if (damageMacro) {
-                        await damageMacro.execute({
+                    console.log(`dsa_attack.js: Calling damage macro with wuchtschlag: ${wuchtschlag}`);
+
+                    try {
+                        // Set the flag with the data
+                        await game.user.setFlag("world", "macroData", {
                             kritisch: isCrit,
                             wuchtschlag: wuchtschlag
                         });
-                    } else {
-                        ui.notifications.error("dsa_damage macro not found");
+
+                        // Call the damage macro
+                        let damageMacro = game.macros.getName("dsa_damage");
+                        if (damageMacro) {
+                            await damageMacro.execute();
+                        } else {
+                            ui.notifications.error("dsa_damage macro not found");
+                        }
+                    } finally {
+                        // Always reset the flag data, even if an error occurs
+                        await game.user.unsetFlag("world", "macroData");
                     }
                 };
 
