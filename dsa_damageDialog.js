@@ -170,6 +170,10 @@ async function createDamageDialog(targetedToken, selectedToken) {
 }
 
 // Execute the dialog and return the result
-let [targetedToken, selectedToken] = args;
-let damageValues = await createDamageDialog(targetedToken, selectedToken);
-return damageValues;
+async function executeDamageDialog({targetedToken, selectedToken}) {
+    let damageValues = await createDamageDialog(targetedToken, selectedToken);
+    return damageValues;
+}
+
+// Return the executeDamageDialog function as the result of the macro
+return executeDamageDialog;

@@ -48,7 +48,19 @@ if (canvas.tokens.controlled.length === 1) {
 }
 
 // Call the DamageDialog macro to get input values
-let damageValues = await game.macros.getName("dsa_damageDialog").execute(targetedToken, selectedToken);
+let damageDialogMacro = game.macros.getName("dsa_damageDialog");
+if (!damageDialogMacro) {
+    ui.notifications.error("dsa_damageDialog macro not found");
+    return;
+}
+
+let executeDamageDialog = await damageDialogMacro.execute();
+if (typeof executeDamageDialog !== 'function') {
+    ui.notifications.error("dsa_damageDialog macro did not return a function");
+    return;
+}
+
+let damageValues = await executeDamageDialog({targetedToken, selectedToken});
 
 // If damageValues is null or undefined, exit the macro
 if (!damageValues) return;

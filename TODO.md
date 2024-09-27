@@ -2,6 +2,7 @@
 
 Changelog:
 - Created DamageDialog macro and updated Damage macro to use it.
+- Fixed issues with macro execution and parameter passing between Damage and DamageDialog macros.
 
 ## 1. Split Dialogs into Separate Macros
 - [x] Create a new macro called "DamageDialog"
