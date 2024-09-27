@@ -168,9 +168,6 @@ if (result.includes("Erfolg")) {
 if (attackValues.finte > 0 && result.includes("Erfolg")) {
     messageContent += `<br>Mit Finte (${attackValues.finte})`;
 }
-if (attackValues.wuchtschlag > 0 && result.includes("Erfolg")) {
-    messageContent += `<br>Mit Wuchtschlag (${attackValues.wuchtschlag})`;
-}
 messageContent += `</div>`;
 
 // Send the result to the chat
