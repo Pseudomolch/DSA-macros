@@ -117,20 +117,117 @@ async function addWoundEffect(location, side = "", count = 1) {
 
     console.log("Wound effect details:", { sideText, label });
 
-    const existingEffect = findExistingEffect(location, side);
-    if (existingEffect) {
-        console.log("Updating existing effect");
-        const match = existingEffect.data.label.match(/(\d+)/);
-        const currentCount = match ? parseInt(match[1]) : 0;
-        count = Math.min(currentCount + count, 3);
-        await updateExistingEffect(existingEffect, effect, label, count);
-    } else {
-        console.log("Creating new effect");
-        await createNewEffect(effect, label, location, side, count);
+    try {
+        const existingEffect = findExistingEffect(location, side);
+        let currentCount = 0;
+        let newlyAppliedWounds = count;
+
+        if (existingEffect) {
+            console.log("Updating existing effect");
+            const match = existingEffect.label.match(/(\d+)/);
+            currentCount = match ? parseInt(match[1]) : 0;
+            newlyAppliedWounds = Math.min(count, 3 - currentCount);
+            count = Math.min(currentCount + count, 3);
+            await updateExistingEffect(existingEffect, effect, label, count);
+        } else {
+            console.log("Creating new effect");
+            await createNewEffect(effect, label, location, side, count);
+        }
+
+        let totalInitiativeReduction = 0;
+        let totalDiceRollString = '';
+
+        if (location === 'kopf') {
+            for (let i = currentCount + 1; i <= Math.min(currentCount + newlyAppliedWounds, 2); i++) {
+                const initiativeData = await reduceInitiative(1);
+                if (initiativeData) {
+                    totalInitiativeReduction += parseFloat(initiativeData.initiativeReduction);
+                    totalDiceRollString += initiativeData.diceRollString;
+                }
+            }
+        }
+
+        let initiativeData = null;
+        if (totalInitiativeReduction > 0) {
+            const combat = game.combat;
+            const combatant = combat?.getCombatantByToken(targetedToken.id);
+            if (combatant) {
+                const oldInitiative = combatant.initiative;
+                const newInitiative = Math.max(0, oldInitiative - totalInitiativeReduction);
+                await combat.setInitiative(combatant.id, Math.floor(newInitiative - targetedToken.actor.system.base.combatAttributes.active.baseInitiative.value));
+                initiativeData = {
+                    initiativeReduction: totalInitiativeReduction,
+                    diceRollString: totalDiceRollString,
+                    oldInitiative: oldInitiative.toFixed(2),
+                    newInitiative: newInitiative.toFixed(2)
+                };
+            }
+        }
+
+        await createChatMessage(effect, count, sideText, initiativeData);
+        console.log("Wound effect process completed");
+    } catch (error) {
+        console.error("Error in addWoundEffect:", error);
+        ui.notifications.error(`Error applying wound effect: ${error.message}`);
+    }
+}
+
+async function reduceInitiative(woundCount) {
+    const combat = game.combat;
+    if (!combat) {
+        console.warn("No active combat!");
+        return null;
     }
 
-    await createChatMessage(effect, count, sideText);
-    console.log("Wound effect process completed");
+    const combatant = combat.getCombatantByToken(targetedToken.id);
+    if (!combatant) {
+        console.warn("Selected token is not in combat!");
+        return null;
+    }
+
+    const rollFormula = `${2 * woundCount}d6`;
+    const roll = await new Roll(rollFormula).evaluate({async: true});
+
+    function getDiceFace(value) {
+        const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+        return diceFaces[value - 1];
+    }
+
+    const diceResults = roll.dice[0].results.map(r => getDiceFace(r.result));
+    const diceRollString = diceResults.join('');
+
+    const initiativeReduction = roll.total;
+
+    return {
+        initiativeReduction,
+        diceRollString
+    };
+}
+
+async function createChatMessage(effect, count, sideText, initiativeData) {
+    const descriptions = effect.baseDescriptions.map(desc => `${desc.attribute} ${desc.value * Math.min(count, 2)}`).join(", ");
+
+    let initiativeMessage = '';
+    if (initiativeData) {
+        const newInitiativeValue = Math.floor(parseFloat(initiativeData.newInitiative));
+        const oldInitiativeValue = Math.floor(parseFloat(initiativeData.oldInitiative));
+        const initiativeColor = newInitiativeValue < 1 ? 'red' : 'inherit';
+        initiativeMessage = `<br><strong>Initiative</strong>: ${oldInitiativeValue} - ${initiativeData.diceRollString} = <span style="color: ${initiativeColor};">${newInitiativeValue}</span>`;
+    }
+
+    const messageContent = `
+        <div style="background-color: #f0f0f0; border: 1px solid #ccc; padding: 5px; border-radius: 3px;">
+            <strong>${targetedToken.name}</strong>: ${count} Wunde${count > 1 ? 'n' : ''} ${sideText}<br>
+            <strong>Effekte:</strong> ${descriptions}
+            ${count === 3 ? `<br><span style="color: red;">${effect.thirdWoundDescription}</span>` : ''}
+            ${initiativeMessage}
+        </div>
+    `;
+
+    await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ token: targetedToken }),
+        content: messageContent
+    });
 }
 
 function getSideText(location, side) {
@@ -149,7 +246,7 @@ function getWoundLabel(count, sideText) {
 }
 
 function findExistingEffect(location, side) {
-    return targetedToken.actor.effects.find(e => e.data.flags.core?.statusId === `wound_${location}${side}`);
+    return targetedToken.actor.effects.find(e => e.flags.core?.statusId === `wound_${location}${side}`);
 }
 
 async function updateExistingEffect(existingEffect, effect, label, count) {
@@ -175,23 +272,6 @@ function getEffectChanges(effect, count) {
         ...change,
         value: change.value * Math.min(count, 2)
     }));
-}
-
-async function createChatMessage(effect, count, sideText) {
-    const descriptions = effect.baseDescriptions.map(desc => `${desc.attribute} ${desc.value * Math.min(count, 2)}`).join(", ");
-
-    const messageContent = `
-        <div style="background-color: #f0f0f0; border: 1px solid #ccc; padding: 5px; border-radius: 3px;">
-            <strong>${targetedToken.name}</strong>: ${count} Wunde${count > 1 ? 'n' : ''} ${sideText}<br>
-            <strong>Effekte:</strong> ${descriptions}
-            ${count === 3 ? `<br><span style="color: red;">${effect.thirdWoundDescription}</span>` : ''}
-        </div>
-    `;
-
-    await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ token: targetedToken }),
-        content: messageContent
-    });
 }
 
 // Function to normalize location
@@ -266,5 +346,5 @@ try {
     console.log("Wound effect added successfully");
 } catch (error) {
     console.error("Error adding wound effect:", error);
-    ui.notifications.error("Error adding wound effect");
+    ui.notifications.error(`Error adding wound effect: ${error.message}`);
 }
