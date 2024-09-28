@@ -145,7 +145,7 @@ async function addWoundEffect(location, side = "", count = 1) {
         let additionalDamage = 0;
         let additionalDamageRollString = '';
 
-        // Handle Kopfwunden initiative reduction
+        // Handle Kopfwunden initiative reduction and additional damage
         if (location === 'kopf') {
             for (let i = currentCount + 1; i <= Math.min(currentCount + newlyAppliedWounds, 2); i++) {
                 const initiativeData = await reduceInitiative(1);
@@ -153,6 +153,18 @@ async function addWoundEffect(location, side = "", count = 1) {
                     totalInitiativeReduction += parseFloat(initiativeData.initiativeReduction);
                     totalDiceRollString += initiativeData.diceRollString;
                 }
+            }
+
+            // Additional damage for third Kopfwunde
+            if (currentCount < 3 && currentCount + newlyAppliedWounds >= 3) {
+                const damageRoll = await new Roll('2d6').evaluate({async: true});
+                additionalDamage = damageRoll.total;
+                additionalDamageRollString = damageRoll.dice[0].results.map(r => getDiceFace(r.result)).join('');
+                
+                // Apply the additional damage
+                const currentLeP = targetedToken.actor.system.base.resources.vitality.value;
+                const newLeP = Math.max(0, currentLeP - additionalDamage);
+                await targetedToken.actor.update({"system.base.resources.vitality.value": newLeP});
             }
         }
 

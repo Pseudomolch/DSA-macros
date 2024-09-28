@@ -11,6 +11,7 @@ Changelog:
 - Updated icons in Damage macro: now using blood drop (🩸) for damage and adhesive bandage (🩹) for wounds.
 - Implemented initiative reduction for head wounds, including multiple wounds applied at once.
 - Implemented additional damage for Bauch and Brust wounds.
+- Implemented additional damage for the third Kopfwunde.
 
 ## 1. Split Dialogs into Separate Macros
 - [x] Create a new macro called "DamageDialog"
@@ -45,10 +46,10 @@ Changelog:
 ## 4. Add some macros and functionality
 - [x] We no longer need to say "Mit Wuchtschlag (x)" in the Attack macro behind the Erfolg line.
 - [x] We should choose a different icon for the clickable Wounds icon in the Damage macro.
-- [ ] We should address the remaining TODOs in the Wounds macro.
+- [x] We should address the remaining TODOs in the Wounds macro.
   - [x] We should decrease the Initiative for the token by -2W6 if a newly applied first or second Kopfwunde is rolled. Needs a new line in the output that says how much Initiative was lost.
   - [x] We should roll additional damage if a Bauchwunde is applied, 1W6 extra for each newly applied (!) first or second Bauchwunde. Needs a new line in the output that shows how much additional damage was rolled.
-  - [ ] We should roll additional damage if a third Kopfwunde is applied, 2W6 extra damage. Needs a new line in the output that shows how much additional damage was rolled.
+  - [x] We should roll additional damage if a third Kopfwunde is applied, 2W6 extra damage. Needs a new line in the output that shows how much additional damage was rolled.
 
 ## 5. Testing
 - [x] Test the Attack macro to ensure it correctly calls Damage
