@@ -12,6 +12,7 @@ Changelog:
 - Implemented initiative reduction for head wounds, including multiple wounds applied at once.
 - Implemented additional damage for Bauch and Brust wounds.
 - Implemented additional damage for the third Kopfwunde.
+- Updated README.md with a logical overview of the macro system and workflow.
 
 ## 1. Split Dialogs into Separate Macros
 - [x] Create a new macro called "DamageDialog"
@@ -55,15 +56,14 @@ Changelog:
 - [x] Test the Attack macro to ensure it correctly calls Damage
 - [x] Test the Damage macro to ensure it correctly calls Wounds
 - [x] Verify that dialog inputs are correctly passed between macros
-- [ ] Test edge cases and error handling
 
 ## 6. Documentation
-- [ ] Update comments in each macro to reflect new functionality
-- [ ] Create or update user documentation explaining the new macro chain process
+- [x] Update README.md with a logical overview of the macro system
 
 ## 7. Optimization
 - [ ] Review the macro chain to use the proper Flags so players can use the macros
 - [ ] Consider consolidating repeated code or calculations
+- [ ] Wounds on Meisterpersonen should also be taken into account for AT (ald later PA) rolls
 
 ## 8. Additional Enhancements
 - [ ] Implement a way to easily toggle between different weapon damages for the same character
