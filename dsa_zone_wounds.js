@@ -1,3 +1,9 @@
+// Interprets a 1-6 value as ASCII dice faces
+function getDiceFace(value) {
+    const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+    return diceFaces[value - 1];
+}
+
 // This does not do -2W6 Initiative or +1W6 SP. TODO: Those effects should be added to the damage macro.
 // Check if exactly one token is targeted
 if (game.user.targets.size !== 1) {
@@ -136,7 +142,10 @@ async function addWoundEffect(location, side = "", count = 1) {
 
         let totalInitiativeReduction = 0;
         let totalDiceRollString = '';
+        let additionalDamage = 0;
+        let additionalDamageRollString = '';
 
+        // Handle Kopfwunden initiative reduction
         if (location === 'kopf') {
             for (let i = currentCount + 1; i <= Math.min(currentCount + newlyAppliedWounds, 2); i++) {
                 const initiativeData = await reduceInitiative(1);
@@ -145,6 +154,25 @@ async function addWoundEffect(location, side = "", count = 1) {
                     totalDiceRollString += initiativeData.diceRollString;
                 }
             }
+        }
+
+        // Handle additional damage for Bauchwunden and Brustwunden
+        if ((location === 'bauch' || location === 'brust') && newlyAppliedWounds > 0 && currentCount < 2) {
+            let damageRollFormula;
+            if (currentCount === 0 && newlyAppliedWounds >= 2) {
+                damageRollFormula = '2d6';
+            } else {
+                damageRollFormula = '1d6';
+            }
+
+            const damageRoll = await new Roll(damageRollFormula).evaluate({async: true});
+            additionalDamage = damageRoll.total;
+            additionalDamageRollString = damageRoll.dice[0].results.map(r => getDiceFace(r.result)).join('');
+            
+            // Apply the additional damage
+            const currentLeP = targetedToken.actor.system.base.resources.vitality.value;
+            const newLeP = Math.max(0, currentLeP - additionalDamage);
+            await targetedToken.actor.update({"system.base.resources.vitality.value": newLeP});
         }
 
         let initiativeData = null;
@@ -164,7 +192,7 @@ async function addWoundEffect(location, side = "", count = 1) {
             }
         }
 
-        await createChatMessage(effect, count, sideText, initiativeData);
+        await createChatMessage(effect, count, sideText, initiativeData, additionalDamage, additionalDamageRollString);
         console.log("Wound effect process completed");
     } catch (error) {
         console.error("Error in addWoundEffect:", error);
@@ -188,11 +216,6 @@ async function reduceInitiative(woundCount) {
     const rollFormula = `${2 * woundCount}d6`;
     const roll = await new Roll(rollFormula).evaluate({async: true});
 
-    function getDiceFace(value) {
-        const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
-        return diceFaces[value - 1];
-    }
-
     const diceResults = roll.dice[0].results.map(r => getDiceFace(r.result));
     const diceRollString = diceResults.join('');
 
@@ -204,7 +227,7 @@ async function reduceInitiative(woundCount) {
     };
 }
 
-async function createChatMessage(effect, count, sideText, initiativeData) {
+async function createChatMessage(effect, count, sideText, initiativeData, additionalDamage, additionalDamageRollString) {
     const descriptions = effect.baseDescriptions.map(desc => `${desc.attribute} ${desc.value * Math.min(count, 2)}`).join(", ");
 
     let initiativeMessage = '';
@@ -215,12 +238,19 @@ async function createChatMessage(effect, count, sideText, initiativeData) {
         initiativeMessage = `<br><strong>Initiative</strong>: ${oldInitiativeValue} - ${initiativeData.diceRollString} = <span style="color: ${initiativeColor};">${newInitiativeValue}</span>`;
     }
 
+    let additionalDamageMessage = '';
+    if (additionalDamage > 0) {
+        const currentLeP = targetedToken.actor.system.base.resources.vitality.value;
+        additionalDamageMessage = `<br><strong>${targetedToken.name}</strong> nimmt ${additionalDamageRollString} = ${additionalDamage} <strong>SP</strong> (${currentLeP} LeP übrig)`;
+    }
+
     const messageContent = `
         <div style="background-color: #f0f0f0; border: 1px solid #ccc; padding: 5px; border-radius: 3px;">
             <strong>${targetedToken.name}</strong>: ${count} Wunde${count > 1 ? 'n' : ''} ${sideText}<br>
             <strong>Effekte:</strong> ${descriptions}
             ${count === 3 ? `<br><span style="color: red;">${effect.thirdWoundDescription}</span>` : ''}
             ${initiativeMessage}
+            ${additionalDamageMessage}
         </div>
     `;
 
