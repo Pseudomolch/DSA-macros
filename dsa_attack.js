@@ -188,14 +188,18 @@ if (result.includes("Erfolg")) {
                     const isCrit = event.currentTarget.dataset.crit === "true";
                     const wuchtschlag = parseInt(event.currentTarget.dataset.wuchtschlag) || 0;
 
-                    console.log(`dsa_attack.js: Calling damage macro with wuchtschlag: ${wuchtschlag}`);
+                    console.log(`dsa_attack.js: Setting attack data with wuchtschlag: ${wuchtschlag}`);
 
                     try {
-                        // Set the flag with the data
-                        await game.user.setFlag("client", "macroData", {
-                            kritisch: isCrit,
-                            wuchtschlag: wuchtschlag
-                        });
+                        // Set the flag on the selected token
+                        if (selectedToken) {
+                            await selectedToken.document.setFlag("world", "attackData", {
+                                kritisch: isCrit,
+                                wuchtschlag: wuchtschlag
+                            });
+                        } else {
+                            ui.notifications.warn("No token selected. Attack data not saved.");
+                        }
 
                         // Call the damage macro
                         let damageMacro = game.macros.getName("dsa_damage");
@@ -206,7 +210,9 @@ if (result.includes("Erfolg")) {
                         }
                     } finally {
                         // Always reset the flag data, even if an error occurs
-                        await game.user.unsetFlag("client", "macroData");
+                        if (selectedToken) {
+                            await selectedToken.document.unsetFlag("world", "attackData");
+                        }
                     }
                 };
 

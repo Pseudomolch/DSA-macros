@@ -180,9 +180,8 @@ async function createDamageDialog(kritisch, wuchtschlag) {
 }
 
 // Execute the dialog and return the result
-async function executeDamageDialog() {
-    let macroData = game.user.getFlag("world", "macroData");
-    let { kritisch, wuchtschlag } = macroData || {};
+async function executeDamageDialog(attackParams) {
+    let { kritisch, wuchtschlag } = attackParams || {};
     console.log(`dsa_damageDialog.js: executeDamageDialog called with wuchtschlag: ${wuchtschlag}`);
     let damageValues = await createDamageDialog(kritisch, wuchtschlag);
     return damageValues;
