@@ -328,7 +328,7 @@ function normalizeLocation(location) {
 }
 
 // Check if we're auto-applying wounds from the damage macro
-let autoApplyData = game.user.getFlag("world", "macroData");
+let autoApplyData = game.user.getFlag("client", "macroData");
 let woundValues;
 
 if (autoApplyData && autoApplyData.autoApply) {
@@ -338,7 +338,7 @@ if (autoApplyData && autoApplyData.autoApply) {
     };
     console.log("Wound values from auto-apply:", woundValues);
     // Clear the flag after use
-    await game.user.unsetFlag("world", "macroData");
+    await game.user.unsetFlag("client", "macroData");
 } else {
     // Call the WoundsDialog macro to get input values
     let woundsDialogMacro = game.macros.getName("dsa_woundsDialog");

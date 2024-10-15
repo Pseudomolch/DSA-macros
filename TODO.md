@@ -13,6 +13,7 @@ Changelog:
 - Implemented additional damage for Bauch and Brust wounds.
 - Implemented additional damage for the third Kopfwunde.
 - Updated README.md with a logical overview of the macro system and workflow.
+- Update flag usage to use "client" scope
 
 ## 1. Split Dialogs into Separate Macros
 - [x] Create a new macro called "DamageDialog"
@@ -61,11 +62,12 @@ Changelog:
 - [x] Update README.md with a logical overview of the macro system
 
 ## 7. Optimization
-- [ ] Review the macro chain to use the proper Flags so players can use the macros
-- [ ] Consider consolidating repeated code or calculations
-- [ ] Wounds on Meisterpersonen should also be taken into account for AT (ald later PA) rolls
+- [x] Review the macro chain to use the proper Flags so players can use the macros
+- [ ] Review to make sure we dont use getFlag when we cant be sure there is a flag - we need to try/catch in this case or look for the data on the data model
 
 ## 8. Additional Enhancements
 - [ ] Implement a way to easily toggle between different weapon damages for the same character
 - [ ] Add support for special abilities or effects that modify damage or wound calculations
+- [ ] Implement wounds on Meisterpersonen influencing AT
+- [ ] Implement a parade macro
 - [x] Create a user interface for managing zone armor values

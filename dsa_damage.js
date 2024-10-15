@@ -42,7 +42,7 @@ if (targetedToken) {
 let selectedToken = canvas.tokens.controlled[0];
 
 // Initialize attackParams
-let attackParams = game.user.getFlag("world", "macroData") || { kritisch: false, wuchtschlag: 0 };
+let attackParams = game.user.getFlag("client", "macroData") || { kritisch: false, wuchtschlag: 0 };
 
 // Call the DamageDialog macro to get input values
 let damageDialogMacro = game.macros.getName("dsa_damageDialog");
@@ -229,15 +229,24 @@ if (targetedToken && game.user.targets.size === 1) {
                     const wounds = parseInt(event.currentTarget.dataset.wounds);
                     const location = event.currentTarget.dataset.location;
                     
-                    // Set the flag for the wounds macro
-                    await game.user.setFlag("world", "macroData", { wounds, location: hitLocation, autoApply: true });
-                    
-                    // Call the wounds macro
-                    let woundsMacro = game.macros.getName("dsa_zone_wounds");
-                    if (woundsMacro) {
-                        woundsMacro.execute();
-                    } else {
-                        ui.notifications.error("dsa_zone_wounds macro not found");
+                    try {
+                        // Set the flag with the data
+                        await game.user.setFlag("client", "macroData", {
+                            wounds: wounds,
+                            location: hitLocation,
+                            autoApply: true
+                        });
+                        
+                        // Call the wounds macro
+                        let woundsMacro = game.macros.getName("dsa_zone_wounds");
+                        if (woundsMacro) {
+                            woundsMacro.execute();
+                        } else {
+                            ui.notifications.error("dsa_zone_wounds macro not found");
+                        }
+                    } finally {
+                        // Always reset the flag data, even if an error occurs
+                        await game.user.unsetFlag("client", "macroData");
                     }
                 };
 

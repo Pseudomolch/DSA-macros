@@ -192,7 +192,7 @@ if (result.includes("Erfolg")) {
 
                     try {
                         // Set the flag with the data
-                        await game.user.setFlag("world", "macroData", {
+                        await game.user.setFlag("client", "macroData", {
                             kritisch: isCrit,
                             wuchtschlag: wuchtschlag
                         });
@@ -206,7 +206,7 @@ if (result.includes("Erfolg")) {
                         }
                     } finally {
                         // Always reset the flag data, even if an error occurs
-                        await game.user.unsetFlag("world", "macroData");
+                        await game.user.unsetFlag("client", "macroData");
                     }
                 };
 
