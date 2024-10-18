@@ -71,7 +71,7 @@ Changelog:
 - [ ] Implement a way to easily toggle between different weapon damages for the same character
 
 ## 9. Bugfixes
-- [ ] Using the Damage macro on itself should be possible
-- [ ] Using the Wounds macro on itself should be possible
-- [ ] The player that was hit should be able to click the buttons to apply the wounds and damage
+- [x] Using the Damage macro on itself should be possible
+- [x] Using the Wounds macro on itself should be possible
+- [ ] The player that was hit should be able to click the buttons to apply the wounds and damage.
 
