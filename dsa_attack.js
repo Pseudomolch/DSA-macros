@@ -160,16 +160,69 @@ if (naturalRoll === 1 || naturalRoll === 20) {
 
 messageContent += `<span style="color: ${result.includes("Erfolg") ? "green" : "red"};">${result}</span>`;
 
+// Add clickable icon for successful attacks
+if (result.includes("Erfolg")) {
+    messageContent += ` <a class="call-damage" data-crit="${result === "Kritischer Erfolg"}" data-wuchtschlag="${attackValues.wuchtschlag}">⚔️</a>`;
+}
+
 if (attackValues.finte > 0 && result.includes("Erfolg")) {
     messageContent += `<br>Mit Finte (${attackValues.finte})`;
-}
-if (attackValues.wuchtschlag > 0 && result.includes("Erfolg")) {
-    messageContent += `<br>Mit Wuchtschlag (${attackValues.wuchtschlag})`;
 }
 messageContent += `</div>`;
 
 // Send the result to the chat
-ChatMessage.create({
+let chatMessage = await ChatMessage.create({
     speaker: ChatMessage.getSpeaker(),
     content: messageContent
 });
+
+// Modify the click event listener for the damage icon
+if (result.includes("Erfolg")) {
+    setTimeout(() => {
+        const messageElement = document.querySelector(`[data-message-id="${chatMessage.id}"]`);
+        if (messageElement) {
+            const callDamageButton = messageElement.querySelector('.call-damage');
+            if (callDamageButton) {
+                const clickHandler = async (event) => {
+                    event.preventDefault();
+                    const isCrit = event.currentTarget.dataset.crit === "true";
+                    const wuchtschlag = parseInt(event.currentTarget.dataset.wuchtschlag) || 0;
+
+                    console.log(`dsa_attack.js: Setting attack data with wuchtschlag: ${wuchtschlag}`);
+
+                    try {
+                        // Set the flag on the selected token
+                        if (selectedToken) {
+                            await selectedToken.document.setFlag("world", "attackData", {
+                                kritisch: isCrit,
+                                wuchtschlag: wuchtschlag
+                            });
+                        } else {
+                            ui.notifications.warn("No token selected. Attack data not saved.");
+                        }
+
+                        // Call the damage macro
+                        let damageMacro = game.macros.getName("dsa_damage");
+                        if (damageMacro) {
+                            await damageMacro.execute();
+                        } else {
+                            ui.notifications.error("dsa_damage macro not found");
+                        }
+                    } finally {
+                        // Always reset the flag data, even if an error occurs
+                        if (selectedToken) {
+                            await selectedToken.document.unsetFlag("world", "attackData");
+                        }
+                    }
+                };
+
+                callDamageButton.addEventListener('click', clickHandler);
+
+                // Clean up the event listener when the message is deleted
+                Hooks.once(`deleteMessage${chatMessage.id}`, () => {
+                    callDamageButton.removeEventListener('click', clickHandler);
+                });
+            }
+        }
+    }, 100);
+}

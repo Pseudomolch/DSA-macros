@@ -1,7 +1,13 @@
+// Interprets a 1-6 value as ASCII dice faces
+function getDiceFace(value) {
+    const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+    return diceFaces[value - 1];
+}
+
 // This does not do -2W6 Initiative or +1W6 SP. TODO: Those effects should be added to the damage macro.
 // Check if exactly one token is targeted
 if (game.user.targets.size !== 1) {
-    ui.notifications.error("Bitte wähle genau einen Token aus.");
+    ui.notifications.error("Genau ein Token muss als Ziel ausgewählt sein.");
     return;
 }
 
@@ -105,23 +111,165 @@ const woundEffects = {
 
 // Function to add wound effect
 async function addWoundEffect(location, side = "", count = 1) {
+    console.log("Adding wound effect:", location, side, count);
     const effect = woundEffects[location];
-    if (!effect) return;
+    if (!effect) {
+        console.error("No effect found for location:", location);
+        return;
+    }
 
     const sideText = getSideText(location, side);
     const label = getWoundLabel(count, sideText);
 
-    const existingEffect = findExistingEffect(location, side);
-    if (existingEffect) {
-        const match = existingEffect.data.label.match(/(\d+)/);
-        const currentCount = match ? parseInt(match[1]) : 0;
-        count = Math.min(currentCount + count, 3);
-        await updateExistingEffect(existingEffect, effect, label, count);
-    } else {
-        await createNewEffect(effect, label, location, side, count);
+    console.log("Wound effect details:", { sideText, label });
+
+    try {
+        const existingEffect = findExistingEffect(location, side);
+        let currentCount = 0;
+        let newlyAppliedWounds = count;
+
+        if (existingEffect) {
+            console.log("Updating existing effect");
+            const match = existingEffect.label.match(/(\d+)/);
+            currentCount = match ? parseInt(match[1]) : 0;
+            newlyAppliedWounds = Math.min(count, 3 - currentCount);
+            count = Math.min(currentCount + count, 3);
+            await updateExistingEffect(existingEffect, effect, label, count);
+        } else {
+            console.log("Creating new effect");
+            await createNewEffect(effect, label, location, side, count);
+        }
+
+        let totalInitiativeReduction = 0;
+        let totalDiceRollString = '';
+        let additionalDamage = 0;
+        let additionalDamageRollString = '';
+
+        // Handle Kopfwunden initiative reduction and additional damage
+        if (location === 'kopf') {
+            for (let i = currentCount + 1; i <= Math.min(currentCount + newlyAppliedWounds, 2); i++) {
+                const initiativeData = await reduceInitiative(1);
+                if (initiativeData) {
+                    totalInitiativeReduction += parseFloat(initiativeData.initiativeReduction);
+                    totalDiceRollString += initiativeData.diceRollString;
+                }
+            }
+
+            // Additional damage for third Kopfwunde
+            if (currentCount < 3 && currentCount + newlyAppliedWounds >= 3) {
+                const damageRoll = await new Roll('2d6').evaluate({async: true});
+                additionalDamage = damageRoll.total;
+                additionalDamageRollString = damageRoll.dice[0].results.map(r => getDiceFace(r.result)).join('');
+                
+                // Apply the additional damage
+                const currentLeP = targetedToken.actor.system.base.resources.vitality.value;
+                const newLeP = Math.max(0, currentLeP - additionalDamage);
+                await targetedToken.actor.update({"system.base.resources.vitality.value": newLeP});
+            }
+        }
+
+        // Handle additional damage for Bauchwunden and Brustwunden
+        if ((location === 'bauch' || location === 'brust') && newlyAppliedWounds > 0 && currentCount < 2) {
+            let damageRollFormula;
+            if (currentCount === 0 && newlyAppliedWounds >= 2) {
+                damageRollFormula = '2d6';
+            } else {
+                damageRollFormula = '1d6';
+            }
+
+            const damageRoll = await new Roll(damageRollFormula).evaluate({async: true});
+            additionalDamage = damageRoll.total;
+            additionalDamageRollString = damageRoll.dice[0].results.map(r => getDiceFace(r.result)).join('');
+            
+            // Apply the additional damage
+            const currentLeP = targetedToken.actor.system.base.resources.vitality.value;
+            const newLeP = Math.max(0, currentLeP - additionalDamage);
+            await targetedToken.actor.update({"system.base.resources.vitality.value": newLeP});
+        }
+
+        let initiativeData = null;
+        if (totalInitiativeReduction > 0) {
+            const combat = game.combat;
+            const combatant = combat?.getCombatantByToken(targetedToken.id);
+            if (combatant) {
+                const oldInitiative = combatant.initiative;
+                const newInitiative = Math.max(0, oldInitiative - totalInitiativeReduction);
+                await combat.setInitiative(combatant.id, Math.floor(newInitiative - targetedToken.actor.system.base.combatAttributes.active.baseInitiative.value));
+                initiativeData = {
+                    initiativeReduction: totalInitiativeReduction,
+                    diceRollString: totalDiceRollString,
+                    oldInitiative: oldInitiative.toFixed(2),
+                    newInitiative: newInitiative.toFixed(2)
+                };
+            }
+        }
+
+        await createChatMessage(effect, count, sideText, initiativeData, additionalDamage, additionalDamageRollString);
+        console.log("Wound effect process completed");
+    } catch (error) {
+        console.error("Error in addWoundEffect:", error);
+        ui.notifications.error(`Error applying wound effect: ${error.message}`);
+    }
+}
+
+async function reduceInitiative(woundCount) {
+    const combat = game.combat;
+    if (!combat) {
+        console.warn("No active combat!");
+        return null;
     }
 
-    await createChatMessage(effect, count, sideText);
+    const combatant = combat.getCombatantByToken(targetedToken.id);
+    if (!combatant) {
+        console.warn("Selected token is not in combat!");
+        return null;
+    }
+
+    const rollFormula = `${2 * woundCount}d6`;
+    const roll = await new Roll(rollFormula).evaluate({async: true});
+
+    const diceResults = roll.dice[0].results.map(r => getDiceFace(r.result));
+    const diceRollString = diceResults.join('');
+
+    const initiativeReduction = roll.total;
+
+    return {
+        initiativeReduction,
+        diceRollString
+    };
+}
+
+async function createChatMessage(effect, count, sideText, initiativeData, additionalDamage, additionalDamageRollString) {
+    const descriptions = effect.baseDescriptions.map(desc => `${desc.attribute} ${desc.value * Math.min(count, 2)}`).join(", ");
+
+    let initiativeMessage = '';
+    if (initiativeData) {
+        const newInitiativeValue = Math.floor(parseFloat(initiativeData.newInitiative));
+        const oldInitiativeValue = Math.floor(parseFloat(initiativeData.oldInitiative));
+        const initiativeColor = newInitiativeValue < 1 ? 'red' : 'inherit';
+        initiativeMessage = `<br><strong>Initiative</strong>: ${oldInitiativeValue} - ${initiativeData.diceRollString} = <span style="color: ${initiativeColor};">${newInitiativeValue}</span>`;
+    }
+
+    let additionalDamageMessage = '';
+    if (additionalDamage > 0) {
+        const currentLeP = targetedToken.actor.system.base.resources.vitality.value;
+        additionalDamageMessage = `<br><strong>${targetedToken.name}</strong> nimmt ${additionalDamageRollString} = ${additionalDamage} <strong>SP</strong> (${currentLeP} LeP übrig)`;
+    }
+
+    const messageContent = `
+        <div style="background-color: #f0f0f0; border: 1px solid #ccc; padding: 5px; border-radius: 3px;">
+            <strong>${targetedToken.name}</strong>: ${count} Wunde${count > 1 ? 'n' : ''} ${sideText}<br>
+            <strong>Effekte:</strong> ${descriptions}
+            ${count === 3 ? `<br><span style="color: red;">${effect.thirdWoundDescription}</span>` : ''}
+            ${initiativeMessage}
+            ${additionalDamageMessage}
+        </div>
+    `;
+
+    await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ token: targetedToken }),
+        content: messageContent
+    });
 }
 
 function getSideText(location, side) {
@@ -140,7 +288,7 @@ function getWoundLabel(count, sideText) {
 }
 
 function findExistingEffect(location, side) {
-    return targetedToken.actor.effects.find(e => e.data.flags.core?.statusId === `wound_${location}${side}`);
+    return targetedToken.actor.effects.find(e => e.flags.core?.statusId === `wound_${location}${side}`);
 }
 
 async function updateExistingEffect(existingEffect, effect, label, count) {
@@ -168,65 +316,81 @@ function getEffectChanges(effect, count) {
     }));
 }
 
-async function createChatMessage(effect, count, sideText) {
-    const descriptions = effect.baseDescriptions.map(desc => `${desc.attribute} ${desc.value * Math.min(count, 2)}`).join(", ");
-
-    const messageContent = `
-        <div style="background-color: #f0f0f0; border: 1px solid #ccc; padding: 5px; border-radius: 3px;">
-            <strong>${targetedToken.name}</strong>: ${count} Wunde${count > 1 ? 'n' : ''} ${sideText}<br>
-            <strong>Effekte:</strong> ${descriptions}
-            ${count === 3 ? `<br><span style="color: red;">${effect.thirdWoundDescription}</span>` : ''}
-        </div>
-    `;
-
-    await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ token: targetedToken }),
-        content: messageContent
-    });
+// Function to normalize location
+function normalizeLocation(location) {
+    location = location.toLowerCase();
+    if (location.includes("kopf")) return "kopf";
+    if (location.includes("brust")) return "brust";
+    if (location.includes("bauch")) return "bauch";
+    if (location.includes("arm")) return "arm";
+    if (location.includes("bein")) return "bein";
+    return location;
 }
 
-// Create dialog for wound selection
-new Dialog({
-    title: "Wunden hinzufügen",
-    content: `
-        <form>
-            <div class="form-group">
-                <label>Anzahl der Wunden:</label>
-                <input type="number" name="anzahlWunden" min="1" max="3" value="1">
-            </div>
-            <div class="form-group">
-                <label>Trefferzone:</label>
-                <select name="trefferzone">
-                    <option value="kopf">Kopf</option>
-                    <option value="brust">Brust</option>
-                    <option value="bauch">Bauch</option>
-                    <option value="armLinks">Linker Arm</option>
-                    <option value="armRechts">Rechter Arm</option>
-                    <option value="beinLinks">Linkes Bein</option>
-                    <option value="beinRechts">Rechtes Bein</option>
-                </select>
-            </div>
-        </form>
-    `,
-    buttons: {
-        apply: {
-            icon: '<i class="fas fa-check"></i>',
-            label: "Anwenden",
-            callback: async (html) => {
-                const count = Math.min(parseInt(html.find('[name="anzahlWunden"]').val()), 3);
-                const location = html.find('[name="trefferzone"]').val();
+// Check if we're auto-applying wounds from the damage macro
+let woundValues;
 
-                const [baseLocation, side] = location.includes('Links') || location.includes('Rechts')
-                    ? [location.replace('Links', '').replace('Rechts', ''), location.includes('Links') ? 'link' : 'recht']
-                    : [location, ''];
+if (targetedToken) {
+    const autoApplyData = targetedToken.document.getFlag("world", "woundData");
+    if (autoApplyData && autoApplyData.autoApply) {
+        woundValues = {
+            location: autoApplyData.location,
+            count: autoApplyData.wounds
+        };
+        console.log("Wound values from auto-apply:", woundValues);
+        // Clear the flag after use
+        await targetedToken.document.unsetFlag("world", "woundData");
+    }
+}
 
-                await addWoundEffect(baseLocation, side, count);
-            }
-        },
-        cancel: {
-            icon: '<i class="fas fa-times"></i>',
-            label: "Abbrechen"
-        }
-    },
-    default: "apply"
-}).render(true);
+if (!woundValues) {
+    // Call the WoundsDialog macro to get input values
+    let woundsDialogMacro = game.macros.getName("dsa_woundsDialog");
+    if (!woundsDialogMacro) {
+        ui.notifications.error("dsa_woundsDialog macro not found");
+        return;
+    }
+
+    let executeWoundsDialog = await woundsDialogMacro.execute();
+    if (typeof executeWoundsDialog !== 'function') {
+        ui.notifications.error("dsa_woundsDialog macro did not return a function");
+        return;
+    }
+
+    woundValues = await executeWoundsDialog();
+}
+
+// If woundValues is null or undefined, exit the macro
+if (!woundValues) {
+    console.log("No wound values, exiting macro");
+    return;
+}
+
+console.log("Wound values before parsing:", woundValues);
+
+// Parse the location and side
+let baseLocation = normalizeLocation(woundValues.location);
+let side = "";
+
+if (woundValues.location.toLowerCase().includes("links")) {
+    side = "link";
+} else if (woundValues.location.toLowerCase().includes("rechts")) {
+    side = "recht";
+}
+
+console.log("Parsed location:", baseLocation, "Side:", side);
+
+// Ensure the baseLocation is valid
+if (!woundEffects[baseLocation]) {
+    console.error("Invalid wound location:", baseLocation);
+    ui.notifications.error(`Invalid wound location: ${baseLocation}`);
+    return;
+}
+
+try {
+    await addWoundEffect(baseLocation, side, woundValues.count);
+    console.log("Wound effect added successfully");
+} catch (error) {
+    console.error("Error adding wound effect:", error);
+    ui.notifications.error(`Error adding wound effect: ${error.message}`);
+}

@@ -1,12 +1,9 @@
 // Initialize variables for targeted token and wound thresholds
-let targetedToken = null;
+let targetedToken = game.user.targets.first();
 let wounds = 0;
 let woundThresholds = [];
 
-// Check if a single token is targeted
-const targets = game.user.targets;
-if (targets.size === 1) {
-    targetedToken = targets.first();
+if (targetedToken) {
     const actor = targetedToken.actor;
 
     // Get actor attributes
@@ -36,185 +33,39 @@ if (targets.size === 1) {
             }
         });
     }
-} else if (targets.size > 1) {
-    // Show error if multiple tokens are targeted
-    ui.notifications.error("Mehrere Tokens anvisiert. Verwende Standard-Makro.");
+} else {
+    // Show error if no token is targeted
+    ui.notifications.error("Kein Token anvisiert. Verwende Standard-Makro.");
 }
 
-// Check for selected token (for default damage value)
-let selectedToken = null;
-if (canvas.tokens.controlled.length === 1) {
-    selectedToken = canvas.tokens.controlled[0];
+// Initialize attackParams
+let attackParams = {};
+
+// Check if there's a selected token with attack data
+let selectedToken = canvas.tokens.controlled[0];
+if (selectedToken) {
+    attackParams = selectedToken.document.getFlag("world", "attackData") || {};
 }
 
-// Function to parse armor values from the actor's special abilities
-function parseArmorValues(actor) {
-    const armorAbility = actor.items.find(item => item.type === "specialAbility" && item.name === "Rüstungswerte");
-    if (armorAbility) {
-        const regex = /Kopf (\d+), Brust (\d+\/?\d*), Arme (\d+\/?\d*), Bauch (\d+), Beine (\d+\/?\d*)/;
-        const match = armorAbility.system.description.match(regex);
-        if (!match) return null;
+console.log(`dsa_damage.js: Retrieved attack data:`, attackParams);
 
-        const parseValue = (value) => {
-            const parts = value.split('/').map(Number);
-            return parts.length === 1 ? parts[0] : parts;
-        };
-
-        return {
-            kopf: parseInt(match[1]),
-            brust: parseValue(match[2]),
-            arme: parseValue(match[3]),
-            bauch: parseInt(match[4]),
-            beine: parseValue(match[5])
-        };
-    } else {
-        // If no Rüstungswerte ability, check for Meisterperson ability
-        const meisterpersonAbility = actor.items.find(item => item.type === "specialAbility" && item.name === "Meisterperson");
-        if (meisterpersonAbility) {
-            const match = meisterpersonAbility.system.description.match(/RS (\d+)/);
-            if (match) {
-                const rs = parseInt(match[1]);
-                return {
-                    kopf: rs,
-                    brust: rs,
-                    arme: rs,
-                    bauch: rs,
-                    beine: rs
-                };
-            }
-        }
-    }
-
-    return null;
+// Call the DamageDialog macro to get input values
+let damageDialogMacro = game.macros.getName("dsa_damageDialog");
+if (!damageDialogMacro) {
+    ui.notifications.error("dsa_damageDialog macro not found");
+    return;
 }
 
-// Function to get TP value from Meisterperson ability
-function getTPFromMeisterperson(actor) {
-    const meisterpersonAbility = actor.items.find(item => item.type === "specialAbility" && item.name === "Meisterperson");
-    if (!meisterpersonAbility) return null;
-
-    const match = meisterpersonAbility.system.description.match(/TP (.+)$/m);
-    return match ? match[1] : null;
+let executeDamageDialog = await damageDialogMacro.execute();
+if (typeof executeDamageDialog !== 'function') {
+    ui.notifications.error("dsa_damageDialog macro did not return a function");
+    return;
 }
 
-// Prompt the user for the damage formula and modifiers
-let damageValues = await new Promise((resolve) => {
-    let armorValues = targetedToken ? parseArmorValues(targetedToken.actor) : null;
-    let defaultDamageFormula = selectedToken ? getTPFromMeisterperson(selectedToken.actor) || "" : "";
+let damageValues = await executeDamageDialog(attackParams);
 
-    new Dialog({
-        title: "DSA 4.1 Schadenswurf",
-        content: `
-        <style>
-            .dsa-dialog { 
-                display: grid; 
-                grid-template-columns: 1fr; 
-                gap: 8px; 
-                padding-bottom: 8px;
-            }
-            .dsa-dialog input[type="number"], 
-            .dsa-dialog input[type="text"] { 
-                width: 100%; 
-                text-align: center; 
-            }
-            .dsa-dialog label { 
-                display: block; 
-                text-align: center; 
-                margin-bottom: 2px; 
-                margin-top: 8px;
-            }
-            .dsa-dialog .top-row {
-                display: grid;
-                grid-template-columns: 1fr 1fr 1fr;
-                gap: 8px;
-                align-items: start;
-            }
-            .dsa-dialog .armor-row {
-                display: grid;
-                grid-template-columns: repeat(5, 1fr);
-                gap: 8px;
-            }
-            .dialog-buttons {
-                margin-top: 8px;
-            }
-            .crit-container {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-            }
-            .crit-container input[type="checkbox"] {
-                margin-top: 5px;
-            }
-        </style>
-        <form class="dsa-dialog">
-            <div class="top-row">
-                <div>
-                    <label for="damageFormula">Schaden</label>
-                    <input id="damageFormula" type="text" placeholder="z.B. 1W+4" value="${defaultDamageFormula}" required>
-                </div>
-                <div>
-                    <label for="wuchtschlag">Wucht</label>
-                    <input id="wuchtschlag" type="number" value="0">
-                </div>
-                <div class="crit-container">
-                    <label for="kritisch">Krit</label>
-                    <input id="kritisch" type="checkbox">
-                </div>
-            </div>
-            <div class="armor-row">
-                <div>
-                    <label for="kopf">Kopf</label>
-                    <input id="kopf" type="number" value="${armorValues ? armorValues.kopf : 0}">
-                </div>
-                <div>
-                    <label for="brust">Brust</label>
-                    <input id="brust" type="text" value="${armorValues ? (Array.isArray(armorValues.brust) ? armorValues.brust.join('/') : armorValues.brust) : 0}">
-                </div>
-                <div>
-                    <label for="arme">Arme</label>
-                    <input id="arme" type="text" value="${armorValues ? (Array.isArray(armorValues.arme) ? armorValues.arme.join('/') : armorValues.arme) : 0}">
-                </div>
-                <div>
-                    <label for="bauch">Bauch</label>
-                    <input id="bauch" type="number" value="${armorValues ? armorValues.bauch : 0}">
-                </div>
-                <div>
-                    <label for="beine">Beine</label>
-                    <input id="beine" type="text" value="${armorValues ? (Array.isArray(armorValues.beine) ? armorValues.beine.join('/') : armorValues.beine) : 0}">
-                </div>
-            </div>
-        </form>
-        `,
-        buttons: {
-            roll: {
-                label: "Würfeln",
-                callback: (html) => {
-                    const parseArmorValue = (value) => {
-                        const parts = value.split('/').map(Number);
-                        return parts.length === 1 ? parts[0] : parts;
-                    };
-
-                    resolve({
-                        damageFormula: html.find('#damageFormula')[0].value,
-                        wuchtschlag: parseInt(html.find('#wuchtschlag')[0].value) || 0,
-                        kritisch: html.find('#kritisch')[0].checked,
-                        armor: {
-                            kopf: parseInt(html.find('#kopf')[0].value) || 0,
-                            brust: parseArmorValue(html.find('#brust')[0].value),
-                            arme: parseArmorValue(html.find('#arme')[0].value),
-                            bauch: parseInt(html.find('#bauch')[0].value) || 0,
-                            beine: parseArmorValue(html.find('#beine')[0].value)
-                        }
-                    });
-                }
-            }
-        },
-        default: "roll",
-        render: html => setTimeout(() => html.find('#damageFormula').focus(), 0)
-    }, {
-        width: 300 // Adjusted width to accommodate the new layout
-    }).render(true);
-});
+// If damageValues is null or undefined, exit the macro
+if (!damageValues) return;
 
 // Function to perform a damage roll
 function performDamageRoll(formula) {
@@ -319,15 +170,16 @@ if (targetedToken && woundThresholds.length > 0) {
         woundsInflicted = 1;
     }
     
-    messageContent += `<br>${damageAfterArmor} <strong>TP</strong> <a class="apply-damage" data-damage="${damageAfterArmor}"><i class="fas fa-heart"></i></a>`;
+    messageContent += `<br>${damageAfterArmor} <strong>TP</strong> <a class="apply-damage" data-damage="${damageAfterArmor}">🩸</a>`;
     if (woundsInflicted > 0) {
         messageContent += `, ${woundsInflicted} <strong>${woundsInflicted === 1 ? 'Wunde' : 'Wunden'}</strong>`;
+        messageContent += ` <a class="apply-wounds" data-wounds="${woundsInflicted}" data-location="${hitLocation}">🩹</a>`;
     }
 } else {
     let damageAfterArmor = Math.max(0, totalDamage - armorValue);
     messageContent += `<br>${damageAfterArmor} <strong>TP</strong>`;
     if (game.user.targets.size == 1) {
-        messageContent += ` <a class="apply-damage" data-damage="${damageAfterArmor}"><i class="fas fa-heart"></i></a>`;
+        messageContent += ` <a class="apply-damage" data-damage="${damageAfterArmor}">🩸</a>`;
     }
 }
 
@@ -339,11 +191,12 @@ let chatMessage = await ChatMessage.create({
     content: messageContent
 });
 
-// Add click event listener to the heart icon
+// Add click event listeners to the heart icon and wound symbol
 if (targetedToken && game.user.targets.size === 1) {
     setTimeout(() => {
         const messageElement = document.querySelector(`[data-message-id="${chatMessage.id}"]`);
         if (messageElement) {
+            // Existing code for apply damage button
             const applyDamageButton = messageElement.querySelector('.apply-damage');
             if (applyDamageButton) {
                 const clickHandler = async (event) => {
@@ -370,6 +223,49 @@ if (targetedToken && game.user.targets.size === 1) {
                 // Clean up the event listener when the message is deleted
                 Hooks.once(`deleteMessage${chatMessage.id}`, () => {
                     applyDamageButton.removeEventListener('click', clickHandler);
+                });
+            }
+
+            // New code for apply wounds button
+            const applyWoundsButton = messageElement.querySelector('.apply-wounds');
+            if (applyWoundsButton) {
+                const woundsClickHandler = async (event) => {
+                    event.preventDefault();
+                    const wounds = parseInt(event.currentTarget.dataset.wounds);
+                    const location = event.currentTarget.dataset.location;
+                    
+                    try {
+                        // Set the flag on the targeted token
+                        if (targetedToken) {
+                            await targetedToken.document.setFlag("world", "woundData", {
+                                wounds: wounds,
+                                location: hitLocation,
+                                autoApply: true
+                            });
+                        } else {
+                            ui.notifications.warn("No token targeted. Wound data not saved.");
+                        }
+                        
+                        // Call the wounds macro
+                        let woundsMacro = game.macros.getName("dsa_zone_wounds");
+                        if (woundsMacro) {
+                            woundsMacro.execute();
+                        } else {
+                            ui.notifications.error("dsa_zone_wounds macro not found");
+                        }
+                    } finally {
+                        // Always reset the flag data, even if an error occurs
+                        if (targetedToken) {
+                            await targetedToken.document.unsetFlag("world", "woundData");
+                        }
+                    }
+                };
+
+                applyWoundsButton.addEventListener('click', woundsClickHandler);
+
+                // Clean up the event listener when the message is deleted
+                Hooks.once(`deleteMessage${chatMessage.id}`, () => {
+                    applyWoundsButton.removeEventListener('click', woundsClickHandler);
                 });
             }
         }
