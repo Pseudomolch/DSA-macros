@@ -86,15 +86,35 @@ let hitLocationRoll = new Roll("1d20").roll({async: false});
 let hitLocation = getHitLocation(hitLocationRoll.total);
 
 // Parse the damage formula
-let parsedFormula = damageValues.damageFormula.replace(/W/gi, 'd').replace(/(\d+)d(\d*)\+?(\d*)/, (match, p1, p2, p3) => {
-    return `${p1}d${p2 || '6'}${p3 ? '+'+p3 : ''}`;
-});
+let parsedFormula = damageValues.damageFormula;
+let damageRoll;
+let baseDamage;
+let diceRollString = '';
 
-// Perform the initial damage roll
-let damageRoll = performDamageRoll(parsedFormula);
+// Check if the input is just a number
+if (/^\d+$/.test(parsedFormula)) {
+    baseDamage = parseInt(parsedFormula);
+    diceRollString = baseDamage.toString();
+} else {
+    // Handle dice notation as before
+    parsedFormula = parsedFormula.replace(/W/gi, 'd').replace(/(\d+)d(\d*)\+?(\d*)/, (match, p1, p2, p3) => {
+        return `${p1}d${p2 || '6'}${p3 ? '+'+p3 : ''}`;
+    });
+    
+    // Perform the initial damage roll
+    damageRoll = performDamageRoll(parsedFormula);
+    baseDamage = damageRoll.total;
+
+    // Generate dice faces string if d6 are used
+    if (parsedFormula.includes('d6')) {
+        const diceResults = damageRoll.dice[0].results.map(r => getDiceFace(r.result));
+        diceRollString = diceResults.join('');
+    } else {
+        diceRollString = damageRoll.dice[0].total;
+    }
+}
 
 // Calculate the total damage
-let baseDamage = damageRoll.total;
 let criticalMultiplier = damageValues.kritisch ? 2 : 1;
 let totalDamage = (baseDamage * criticalMultiplier) + damageValues.wuchtschlag;
 
@@ -104,31 +124,31 @@ function getDiceFace(value) {
     return diceFaces[value - 1];
 }
 
-// Generate dice faces string if d6 are used
-let diceRollString = '';
-if (parsedFormula.includes('d6')) {
-    const diceResults = damageRoll.dice[0].results.map(r => getDiceFace(r.result));
-    diceRollString = diceResults.join('');
-} else {
-    diceRollString = damageRoll.dice[0].total;
-}
-
 // Extract the modifier from the original formula
 let modifier = damageValues.damageFormula.match(/([+-]?\d+)$/);
 modifier = modifier ? parseInt(modifier[1]) : 0;
 
 // Construct the message content
 let messageContent = `<div style="background-color: #f0f0f0; border: 1px solid #ccc; padding: 5px; border-radius: 3px;">`;
-messageContent += `<strong>Schaden:</strong> ${damageValues.kritisch ? `(${damageValues.damageFormula})x2` : damageValues.damageFormula}`;
-if (damageValues.wuchtschlag > 0) messageContent += `+${damageValues.wuchtschlag}(Wucht)`;
-messageContent += `<br><strong>Wurf:</strong> `;
-if (damageValues.kritisch) {
-    messageContent += `(${diceRollString}${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''})x2`;
+messageContent += `<strong>Schaden:</strong> `;
+if (/^\d+$/.test(damageValues.damageFormula)) {
+    // For simple numbers, just show the number and total
+    messageContent += `${damageValues.kritisch ? `${damageValues.damageFormula}x2` : damageValues.damageFormula}`;
+    if (damageValues.wuchtschlag > 0) messageContent += `+${damageValues.wuchtschlag}(Wucht)`;
+    messageContent += ` = ${totalDamage} Schaden`;
 } else {
-    messageContent += `${diceRollString}${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''}`;
+    // For dice rolls, show the full details
+    messageContent += `${damageValues.kritisch ? `(${damageValues.damageFormula})x2` : damageValues.damageFormula}`;
+    if (damageValues.wuchtschlag > 0) messageContent += `+${damageValues.wuchtschlag}(Wucht)`;
+    messageContent += `<br><strong>Wurf:</strong> `;
+    if (damageValues.kritisch) {
+        messageContent += `(${diceRollString}${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''})x2`;
+    } else {
+        messageContent += `${diceRollString}${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''}`;
+    }
+    if (damageValues.wuchtschlag > 0) messageContent += `+${damageValues.wuchtschlag}`;
+    messageContent += ` = ${totalDamage} Schaden`;
 }
-if (damageValues.wuchtschlag > 0) messageContent += `+${damageValues.wuchtschlag}`;
-messageContent += ` = ${totalDamage} Schaden`;
 
 // Get the armor value based on hit location
 let armorValue = 0;

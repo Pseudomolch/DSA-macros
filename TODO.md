@@ -14,6 +14,7 @@ Changelog:
 - Implemented additional damage for the third Kopfwunde.
 - Updated README.md with a logical overview of the macro system and workflow.
 - Update flag usage to use selected token instead of user
+- Enhanced Damage macro to handle simple number inputs without dice rolls
 
 ## 1. Split Dialogs into Separate Macros
 - [x] Create a new macro called "DamageDialog"
