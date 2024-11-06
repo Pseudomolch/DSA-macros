@@ -16,6 +16,7 @@ Changelog:
 - Update flag usage to use selected token instead of user
 - Enhanced Damage macro to handle simple number inputs without dice rolls
 - Created Parade macro with support for Meisterperson PA values and finte modifiers
+- Created NSC Aktion macro to display Meisterperson stats and provide quick access to all related macros
 
 ## 1. Split Dialogs into Separate Macros
 - [x] Create a new macro called "DamageDialog"
