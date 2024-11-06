@@ -69,8 +69,8 @@ Changelog:
 
 ## 8. Additional Enhancements
 - [x] Create a user interface for managing zone armor values
-- [ ] Implement a parade macro
-- [ ] Implement wounds on Meisterpersonen influencing AT
+- [x] Implement a parade macro
+- [ ] Implement wounds on Meisterpersonen influencing AT and PA
 - [ ] Implement a way to easily toggle between different weapon damages for the same character
 
 ## 9. Bugfixes
