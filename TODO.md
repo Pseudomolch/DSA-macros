@@ -17,6 +17,7 @@ Changelog:
 - Enhanced Damage macro to handle simple number inputs without dice rolls
 - Created Parade macro with support for Meisterperson PA values and finte modifiers
 - Created NSC Aktion macro to display Meisterperson stats and provide quick access to all related macros
+- Implemented wounds on Meisterpersonen influencing AT and PA
 
 ## 1. Split Dialogs into Separate Macros
 - [x] Create a new macro called "DamageDialog"
@@ -70,11 +71,10 @@ Changelog:
 ## 8. Additional Enhancements
 - [x] Create a user interface for managing zone armor values
 - [x] Implement a parade macro
-- [ ] Implement wounds on Meisterpersonen influencing AT and PA
+- [x] Implement wounds on Meisterpersonen influencing AT and PA
 - [ ] Implement a way to easily toggle between different weapon damages for the same character
 
 ## 9. Bugfixes
 - [x] Using the Damage macro on itself should be possible
 - [x] Using the Wounds macro on itself should be possible
 - [ ] The player that was hit should be able to click the buttons to apply the wounds and damage.
-

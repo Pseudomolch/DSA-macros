@@ -2,10 +2,26 @@
 let selectedToken = null;
 let meisterpersonAbility = null;
 let defaultParadeValue = "";
+let defaultModifier = 0;
 
 if (canvas.tokens.controlled.length === 1) {
     selectedToken = canvas.tokens.controlled[0];
     meisterpersonAbility = selectedToken.actor.items.find(item => item.type === "specialAbility" && item.name === "Meisterperson");
+    
+    // Get parade modifiers from active effects
+    const paradeEffects = selectedToken.actor.effects.filter(e => 
+        e.changes.some(c => c.key === "system.base.combatAttributes.active.baseParry.value")
+    );
+    
+    for (const effect of paradeEffects) {
+        const paradeChanges = effect.changes.filter(c => 
+            c.key === "system.base.combatAttributes.active.baseParry.value"
+        );
+        for (const change of paradeChanges) {
+            // Flip the sign of the modifier (e.g. -4 becomes +4)
+            defaultModifier -= Number(change.value);
+        }
+    }
     
     if (meisterpersonAbility) {
         const match = meisterpersonAbility.system.description.match(/INI \d+, PA (\d+),/);
@@ -51,7 +67,7 @@ let paradeValues = await new Promise((resolve) => {
             <div class="modifiers">
                 <div>
                     <label for="modifier">Mod</label>
-                    <input id="modifier" type="number" value="0">
+                    <input id="modifier" type="number" value="${defaultModifier}">
                 </div>
                 <div>
                     <label for="finte">Finte</label>
