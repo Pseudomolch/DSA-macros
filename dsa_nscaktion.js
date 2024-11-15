@@ -60,8 +60,6 @@ const woundEffects = actor.effects.filter(e =>
     const count = countMatch ? parseInt(countMatch[1]) : 1;
     const location = e.flags.core.statusId.replace('wound_', '').split('_').pop().toLowerCase();
     
-    console.log('Effect:', {label, count, location});
-    
     const modifiers = [];
     const modifierCount = Math.min(count, 2); // Only multiply up to 2 wounds
     
@@ -109,8 +107,6 @@ const woundEffects = actor.effects.filter(e =>
         );
         if (count >= 3) modifiers.push('Bein handlungsunfähig');
     }
-    
-    console.log('Modifiers:', modifiers);
     
     return {
         label: label,
