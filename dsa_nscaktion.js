@@ -50,10 +50,73 @@ const npcData = parseNPCData(meisterpersonAbility.system.description);
 // Get current LeP
 const currentLep = actor.system.base.resources.vitality.value;
 
-// Get active wound effects
+// Get active wound effects with their modifiers
 const woundEffects = actor.effects.filter(e => 
     e.flags.core?.statusId?.startsWith('wound_')
-).map(e => e.label);
+).map(e => {
+    // Extract location and count from the label
+    const label = e.label;
+    const countMatch = label.match(/^(\d+) Wunden?/);
+    const count = countMatch ? parseInt(countMatch[1]) : 1;
+    const location = e.flags.core.statusId.replace('wound_', '').split('_').pop().toLowerCase();
+    
+    console.log('Effect:', {label, count, location});
+    
+    const modifiers = [];
+    const modifierCount = Math.min(count, 2); // Only multiply up to 2 wounds
+    
+    // Add modifiers based on location and multiply by wound count (max 2)
+    if (location.includes('kopf')) {
+        modifiers.push(
+            `MU ${-2 * modifierCount}`,
+            `KL ${-2 * modifierCount}`,
+            `IN ${-2 * modifierCount}`,
+            `INI-Basis ${-2 * modifierCount}`
+        );
+        if (count >= 3) modifiers.push('bewusstlos, Blutverlust');
+    } else if (location.includes('brust')) {
+        modifiers.push(
+            `AT ${-1 * modifierCount}`,
+            `PA ${-1 * modifierCount}`,
+            `KO ${-1 * modifierCount}`,
+            `KK ${-1 * modifierCount}`
+        );
+        if (count >= 3) modifiers.push('bewusstlos, Blutverlust');
+    } else if (location.includes('bauch')) {
+        modifiers.push(
+            `AT ${-1 * modifierCount}`,
+            `PA ${-1 * modifierCount}`,
+            `KO ${-1 * modifierCount}`,
+            `KK ${-1 * modifierCount}`,
+            `GS ${-1 * modifierCount}`,
+            `INI-Basis ${-1 * modifierCount}`
+        );
+        if (count >= 3) modifiers.push('bewusstlos, Blutverlust');
+    } else if (location.includes('arm')) {
+        modifiers.push(
+            `AT ${-2 * modifierCount}`,
+            `PA ${-2 * modifierCount}`,
+            `KK ${-2 * modifierCount}`,
+            `FF ${-2 * modifierCount}`
+        );
+        if (count >= 3) modifiers.push('Arm handlungsunfähig');
+    } else if (location.includes('bein')) {
+        modifiers.push(
+            `AT ${-2 * modifierCount}`,
+            `PA ${-2 * modifierCount}`,
+            `GE ${-2 * modifierCount}`,
+            `INI-Basis ${-2 * modifierCount}`
+        );
+        if (count >= 3) modifiers.push('Bein handlungsunfähig');
+    }
+    
+    console.log('Modifiers:', modifiers);
+    
+    return {
+        label: label,
+        modifiers: modifiers
+    };
+});
 
 // Create the dialog content
 const dialogContent = `
@@ -141,7 +204,7 @@ const dialogContent = `
         ${woundEffects.length > 0 ? `
         <div class="wounds-list">
             <strong>Wunden:</strong><br>
-            ${woundEffects.map(wound => `• ${wound}`).join('<br>')}
+            ${woundEffects.map(wound => `• ${wound.label} (${wound.modifiers.join(', ')})`).join('<br>')}
         </div>
         ` : ''}
     </div>

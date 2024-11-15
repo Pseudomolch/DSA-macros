@@ -18,6 +18,7 @@ Changelog:
 - Created Parade macro with support for Meisterperson PA values and finte modifiers
 - Created NSC Aktion macro to display Meisterperson stats and provide quick access to all related macros
 - Implemented wounds on Meisterpersonen influencing AT and PA
+- Enhanced NSC Aktion macro to display wound modifiers
 
 ## 1. Split Dialogs into Separate Macros
 - [x] Create a new macro called "DamageDialog"
