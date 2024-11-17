@@ -6,17 +6,20 @@
     "version": "1.0.0",
     "authors": [
         {
+            "id": "david",
             "name": "David"
         }
     ],
+    "minimumCoreVersion": "10",
+    "compatibleCoreVersion": "10",
     "compatibility": {
-        "minimum": "10",
-        "verified": "11"
+        "minimum": 10,
+        "verified": 10
     },
     "relationships": {
         "systems": [
             {
-                "id": "dsa41",
+                "id": "dsa-41",
                 "type": "system",
                 "manifest": "https://gitlab.com/foundry-vtt-dsa/dsa-4.1-core/dsa-4.1-system/-/raw/master/package.json"
             }
@@ -38,6 +41,5 @@
     "socket": true,
     "url": "https://github.com/Pseudomolch/DSA-macros",
     "manifest": "https://raw.githubusercontent.com/Pseudomolch/DSA-macros/main/module.json",
-    "download": "https://github.com/Pseudomolch/DSA-macros/archive/refs/heads/main.zip",
-    "license": "MIT"
+    "download": "https://github.com/Pseudomolch/DSA-macros/archive/refs/heads/main.zip"
 }
