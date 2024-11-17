@@ -67,14 +67,14 @@ function parseArmorValue(value) {
 }
 
 // Main function to create and return the dialog
-async function createDamageDialog(kritisch, wuchtschlag) {
+async function createDamageDialog(kritisch, wuchtschlag, passedDamageFormula) {
     console.log(`dsa_damageDialog.js: Creating dialog with wuchtschlag: ${wuchtschlag}`);
 
     let targetedToken = game.user.targets.first();
     let selectedToken = canvas.tokens.controlled[0];
 
     let armorValues = targetedToken ? parseArmorValues(targetedToken.actor) : null;
-    let defaultDamageFormula = selectedToken ? getTPFromMeisterperson(selectedToken.actor) || "" : "";
+    let defaultDamageFormula = passedDamageFormula || (selectedToken ? getTPFromMeisterperson(selectedToken.actor) || "" : "");
 
     return new Promise((resolve) => {
         new Dialog({
@@ -191,9 +191,9 @@ async function createDamageDialog(kritisch, wuchtschlag) {
 
 // Execute the dialog and return the result
 async function executeDamageDialog(attackParams) {
-    let { kritisch, wuchtschlag } = attackParams || {};
-    console.log(`dsa_damageDialog.js: executeDamageDialog called with wuchtschlag: ${wuchtschlag}`);
-    let damageValues = await createDamageDialog(kritisch, wuchtschlag);
+    let { kritisch, wuchtschlag, damageFormula } = attackParams || {};
+    console.log(`dsa_damageDialog.js: executeDamageDialog called with wuchtschlag: ${wuchtschlag}, damageFormula: ${damageFormula}`);
+    let damageValues = await createDamageDialog(kritisch, wuchtschlag, damageFormula);
     return damageValues;
 }
 

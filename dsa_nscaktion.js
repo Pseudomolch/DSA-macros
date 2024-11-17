@@ -119,6 +119,24 @@ const woundEffects = actor.effects.filter(e =>
     };
 });
 
+// Function to trigger attack roll
+async function triggerAttackRoll(attack) {
+    const token = canvas.tokens.controlled[0];
+    await token.document.setFlag("world", "attackData", {
+        attackName: attack.name || "",
+        defaultAttackValue: parseInt(attack.at) || 0,
+        attackModifier: 0,
+        damageFormula: attack.tp || ""
+    });
+
+    const attackMacro = game.macros.getName("dsa_attack");
+    if (attackMacro) {
+        attackMacro.execute();
+    } else {
+        ui.notifications.error("dsa_attack macro not found");
+    }
+}
+
 // Create the dialog content
 const dialogContent = `
 <style>
@@ -185,6 +203,21 @@ const dialogContent = `
     .action-button:hover {
         background: #7a7971;
     }
+    .attack-list { margin-top: 10px; }
+    .attack-item {
+        display: flex;
+        align-items: center;
+        margin: 5px 0;
+        gap: 8px;
+    }
+    .attack-emoji {
+        cursor: pointer;
+        user-select: none;
+    }
+    .attack-emoji:hover {
+        transform: scale(1.2);
+    }
+    .attack-name { flex: 1; }
 </style>
 <div class="dsa-dialog">
     <div class="dsa-stats">
@@ -201,11 +234,15 @@ const dialogContent = `
             GS ${npcData.gs}, AuP ${npcData.aup}, MR ${npcData.mr}, GW ${npcData.gw}
         </div>
 
-        ${npcData.attacks.map(attack => `
-        <div class="stat-line">
-            ⚔️ ${attack.name}, DK ${attack.dk}, AT ${attack.at}, TP ${attack.tp}
+        <div class="attack-list">
+            ${npcData.attacks.map(attack => `
+                <div class="attack-item">
+                    <span class="attack-emoji" data-attack='${JSON.stringify(attack)}'>⚔️</span>
+                    <span class="attack-name">${attack.name}</span>
+                    <span class="attack-stats">DK ${attack.dk}, AT ${attack.at}, TP ${attack.tp}</span>
+                </div>
+            `).join('')}
         </div>
-        `).join('')}
 
         ${woundEffects.length > 0 ? `
         <div class="wounds-list">
@@ -250,6 +287,13 @@ let currentDialog = new Dialog({
             } else {
                 ui.notifications.error(`Makro ${macroName} nicht gefunden`);
             }
+        });
+
+        // Add event listeners for attack rolls
+        html.find('.attack-emoji').on('click', async function(event) {
+            event.preventDefault();
+            const attackData = JSON.parse(this.dataset.attack);
+            await triggerAttackRoll(attackData);
         });
     }
 }, {

@@ -4,37 +4,53 @@ let meisterpersonAbility = null;
 let defaultAttackValue = "";
 let attackName = "";
 let attackModifier = 0;
+let damageFormula = "";
 
 if (canvas.tokens.controlled.length === 1) {
     selectedToken = canvas.tokens.controlled[0];
-    meisterpersonAbility = selectedToken.actor.items.find(item => item.type === "specialAbility" && item.name === "Meisterperson");
     
-    // Get attack modifiers from active effects
-    const attackEffects = selectedToken.actor.effects.filter(e => 
-        e.changes.some(c => c.key === "system.base.combatAttributes.active.baseAttack.value")
-    );
-    
-    for (const effect of attackEffects) {
-        const attackChanges = effect.changes.filter(c => 
-            c.key === "system.base.combatAttributes.active.baseAttack.value"
-        );
-        for (const change of attackChanges) {
-            // Flip the sign of the modifier (e.g. -4 becomes +4)
-            attackModifier -= Number(change.value);
-        }
-    }
-    
-    if (meisterpersonAbility) {
-        const lines = meisterpersonAbility.system.description.split('\n');
-        const attackRegex = /Angriff (.+), DK ([A-Z]), AT (\d+), TP (.+)/;
+    // Get passed attack data if available
+    const attackData = selectedToken.document.getFlag("world", "attackData");
+    if (attackData && attackData.defaultAttackValue !== undefined) {
+        defaultAttackValue = String(attackData.defaultAttackValue);
+        attackName = attackData.attackName || "";
+        attackModifier = attackData.attackModifier || 0;
+        damageFormula = attackData.damageFormula || "";
         
-        // Find the first valid attack line
-        for (const line of lines) {
-            const match = line.match(attackRegex);
-            if (match) {
-                attackName = match[1];
-                defaultAttackValue = match[3];
-                break;
+        // Clear the flag after reading
+        selectedToken.document.unsetFlag("world", "attackData");
+    } else {
+        // If no passed data, try to get from Meisterperson
+        meisterpersonAbility = selectedToken.actor.items.find(item => item.type === "specialAbility" && item.name === "Meisterperson");
+        
+        // Get attack modifiers from active effects
+        const attackEffects = selectedToken.actor.effects.filter(e => 
+            e.changes.some(c => c.key === "system.base.combatAttributes.active.baseAttack.value")
+        );
+        
+        for (const effect of attackEffects) {
+            const attackChanges = effect.changes.filter(c => 
+                c.key === "system.base.combatAttributes.active.baseAttack.value"
+            );
+            for (const change of attackChanges) {
+                // Flip the sign of the modifier (e.g. -4 becomes +4)
+                attackModifier -= Number(change.value);
+            }
+        }
+        
+        if (meisterpersonAbility) {
+            const lines = meisterpersonAbility.system.description.split('\n');
+            const attackRegex = /Angriff (.+), DK ([A-Z]), AT (\d+), TP (.+)/;
+            
+            // Find the first valid attack line
+            for (const line of lines) {
+                const match = line.match(attackRegex);
+                if (match) {
+                    attackName = match[1];
+                    defaultAttackValue = match[3];
+                    damageFormula = match[4];
+                    break;
+                }
             }
         }
     }
@@ -199,8 +215,16 @@ let chatMessage = await ChatMessage.create({
     content: messageContent
 });
 
-// Modify the click event listener for the damage icon
+// If it's a success, store the data for the damage roll and add click handler
 if (result.includes("Erfolg")) {
+    if (selectedToken) {
+        await selectedToken.document.setFlag("world", "attackData", {
+            kritisch: result === "Kritischer Erfolg",
+            wuchtschlag: attackValues.wuchtschlag,
+            damageFormula: damageFormula
+        });
+    }
+
     setTimeout(() => {
         const messageElement = document.querySelector(`[data-message-id="${chatMessage.id}"]`);
         if (messageElement) {
@@ -208,40 +232,15 @@ if (result.includes("Erfolg")) {
             if (callDamageButton) {
                 const clickHandler = async (event) => {
                     event.preventDefault();
-                    const isCrit = event.currentTarget.dataset.crit === "true";
-                    const wuchtschlag = parseInt(event.currentTarget.dataset.wuchtschlag) || 0;
-
-                    console.log(`dsa_attack.js: Setting attack data with wuchtschlag: ${wuchtschlag}`);
-
-                    try {
-                        // Set the flag on the selected token
-                        if (selectedToken) {
-                            await selectedToken.document.setFlag("world", "attackData", {
-                                kritisch: isCrit,
-                                wuchtschlag: wuchtschlag
-                            });
-                        } else {
-                            ui.notifications.warn("No token selected. Attack data not saved.");
-                        }
-
-                        // Call the damage macro
-                        let damageMacro = game.macros.getName("dsa_damage");
-                        if (damageMacro) {
-                            await damageMacro.execute();
-                        } else {
-                            ui.notifications.error("dsa_damage macro not found");
-                        }
-                    } finally {
-                        // Always reset the flag data, even if an error occurs
-                        if (selectedToken) {
-                            await selectedToken.document.unsetFlag("world", "attackData");
-                        }
+                    const damageMacro = game.macros.getName("dsa_damage");
+                    if (damageMacro) {
+                        damageMacro.execute();
+                    } else {
+                        ui.notifications.error("dsa_damage macro not found");
                     }
                 };
 
                 callDamageButton.addEventListener('click', clickHandler);
-
-                // Clean up the event listener when the message is deleted
                 Hooks.once(`deleteMessage${chatMessage.id}`, () => {
                     callDamageButton.removeEventListener('click', clickHandler);
                 });

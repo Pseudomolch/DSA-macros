@@ -1,6 +1,7 @@
 # TODO: Enhance Macro Functionality
 
 Changelog:
+- Added ⚔️ quick-attack with damage formulas in NSC Aktion macro
 - Created DamageDialog macro and updated Damage macro to use it.
 - Fixed issues with macro execution and parameter passing between Damage and DamageDialog macros.
 - Created WoundsDialog macro and updated Zone Wounds macro to use it.
@@ -21,6 +22,7 @@ Changelog:
 - Enhanced NSC Aktion macro to display wound modifiers
 - Updated NSC Aktion macro to support multiple attacks
 - Updated Attack and Damage macros to support multiple attacks in Meisterpersonen, using the first attack as default
+- Added clickable sword emoji (⚔️) in NSC Aktion macro to trigger attack rolls with default values and pass damage formulas through the entire macro chain.
 
 ## 1. Split Dialogs into Separate Macros
 - [x] Create a new macro called "DamageDialog"
