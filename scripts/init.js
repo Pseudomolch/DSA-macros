@@ -20,25 +20,8 @@ import { ZoneWoundsDialog } from './dialogs/zoneWoundsDialog.js';
 import { NPCParser } from './utils/npcParser.js';
 import { MeisterpersonParser } from './utils/meisterpersonParser.js';
 
-Hooks.once('init', async function() {
-    console.log('DSA-Macros | Initializing DSA Macros Module');
-
-    // Register module settings if needed
-    game.settings.register('dsa-macros', 'moduleSettings', {
-        name: 'DSA Macros Settings',
-        scope: 'world',
-        config: false,
-        default: {},
-        type: Object
-    });
-});
-
-Hooks.once('ready', async function() {
-    console.log('DSA-Macros | Ready');
-});
-
-// Make classes available globally
-window.DSAMacros = {
+// Create API object
+const api = {
     DSAAttack,
     DSADamage,
     DSAParade,
@@ -56,3 +39,26 @@ window.DSAMacros = {
     NPCParser,
     MeisterpersonParser
 };
+
+Hooks.once('init', async function() {
+    console.log('DSA-Macros | Initializing DSA Macros Module');
+
+    // Register module settings if needed
+    game.settings.register('dsa-macros', 'moduleSettings', {
+        name: 'DSA Macros Settings',
+        scope: 'world',
+        config: false,
+        default: {},
+        type: Object
+    });
+
+    // Make API available to other modules
+    game.modules.get('dsa-macros').api = api;
+});
+
+Hooks.once('ready', async function() {
+    console.log('DSA-Macros | Ready');
+});
+
+// Make classes available globally
+window.DSAMacros = api;
