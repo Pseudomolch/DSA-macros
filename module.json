@@ -7,8 +7,7 @@
     "author": "David",
     "authors": [
         {
-            "name": "David",
-            "discord": "david"
+            "name": "David"
         }
     ],
     "minimumCoreVersion": "10",
@@ -50,14 +49,14 @@
     ],
     "dependencies": [
         {
-            "name": "dsa",
+            "name": "dsa41",
             "type": "system",
-            "manifest": "https://raw.githubusercontent.com/Plushtoast/dsa5-foundryVTT/master/system.json"
+            "manifest": "https://gitlab.com/foundry-vtt-dsa/dsa-4.1-core/dsa-4.1-system/-/raw/master/system.json"
         }
     ],
     "socket": true,
-    "url": "https://github.com/yourusername/dsa-macros",
-    "manifest": "https://raw.githubusercontent.com/yourusername/dsa-macros/main/module.json",
-    "download": "https://github.com/yourusername/dsa-macros/archive/main.zip",
+    "url": "https://github.com/Pseudomolch/DSA-macros",
+    "manifest": "https://raw.githubusercontent.com/Pseudomolch/DSA-macros/main/module.json",
+    "download": "https://github.com/Pseudomolch/DSA-macros/archive/main.zip",
     "license": "MIT"
 }
