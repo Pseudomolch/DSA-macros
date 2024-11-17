@@ -22,22 +22,28 @@ import { MeisterpersonParser } from './utils/meisterpersonParser.js';
 
 // Create API object
 const api = {
-    DSAAttack,
-    DSADamage,
-    DSAParade,
-    DSATalent,
-    DSAZoneArmor,
-    DSAZoneWounds,
-    DSANPCAction,
-    AttackDialog,
-    DamageDialog,
-    NPCDialog,
-    ParadeDialog,
-    TalentDialog,
-    ZoneArmorDialog,
-    ZoneWoundsDialog,
-    NPCParser,
-    MeisterpersonParser
+    macros: {
+        DSAAttack,
+        DSADamage,
+        DSAParade,
+        DSATalent,
+        DSAZoneArmor,
+        DSAZoneWounds,
+        DSANPCAction
+    },
+    dialogs: {
+        AttackDialog,
+        DamageDialog,
+        NPCDialog,
+        ParadeDialog,
+        TalentDialog,
+        ZoneArmorDialog,
+        ZoneWoundsDialog
+    },
+    utils: {
+        NPCParser,
+        MeisterpersonParser
+    }
 };
 
 Hooks.once('init', async function() {
