@@ -4,7 +4,6 @@
     "title": "DSA 4.1 Macros",
     "description": "A collection of macros and utilities for DSA 4.1 in Foundry VTT",
     "version": "1.0.0",
-    "author": "David",
     "authors": [
         {
             "name": "David"
