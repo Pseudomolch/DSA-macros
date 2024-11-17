@@ -9,8 +9,6 @@
             "name": "David"
         }
     ],
-    "minimumCoreVersion": "10",
-    "compatibleCoreVersion": "11",
     "compatibility": {
         "minimum": "10",
         "verified": "11"
@@ -24,35 +22,17 @@
             }
         ]
     },
-    "scripts": [
-        "scripts/utils/npcParser.js",
-        "scripts/utils/meisterpersonParser.js",
-        "scripts/dialogs/attackDialog.js",
-        "scripts/dialogs/damageDialog.js",
-        "scripts/dialogs/npcDialog.js",
-        "scripts/dialogs/paradeDialog.js",
-        "scripts/dialogs/talentDialog.js",
-        "scripts/dialogs/zoneArmorDialog.js",
-        "scripts/dialogs/zoneWoundsDialog.js",
-        "scripts/macros/attack.js",
-        "scripts/macros/damage.js",
-        "scripts/macros/npcAction.js",
-        "scripts/macros/parade.js",
-        "scripts/macros/talent.js",
-        "scripts/macros/zoneArmor.js",
-        "scripts/macros/zoneWounds.js"
-    ],
     "esmodules": [
-        "scripts/init.js"
+        "./scripts/init.js"
     ],
     "styles": [
-        "styles/dsa-macros.css"
+        "./styles/dsa-macros.css"
     ],
     "languages": [
         {
             "lang": "de",
             "name": "Deutsch",
-            "path": "lang/de.json"
+            "path": "./lang/de.json"
         }
     ],
     "socket": true,
