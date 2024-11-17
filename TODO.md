@@ -19,6 +19,7 @@ Changelog:
 - Created NSC Aktion macro to display Meisterperson stats and provide quick access to all related macros
 - Implemented wounds on Meisterpersonen influencing AT and PA
 - Enhanced NSC Aktion macro to display wound modifiers
+- Updated NSC Aktion macro to support multiple attacks
 
 ## 1. Split Dialogs into Separate Macros
 - [x] Create a new macro called "DamageDialog"
