@@ -50,7 +50,7 @@
         {
             "name": "dsa41",
             "type": "system",
-            "manifest": "https://gitlab.com/foundry-vtt-dsa/dsa-4.1-core/dsa-4.1-system/-/raw/master/package.json"
+            "manifest": "https://gitlab.com/foundry-vtt-dsa/dsa-4.1-core/dsa-4.1-system/-/master/package.json"
         }
     ],
     "socket": true,
