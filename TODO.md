@@ -23,6 +23,7 @@ Changelog:
 - Updated NSC Aktion macro to support multiple attacks
 - Updated Attack and Damage macros to support multiple attacks in Meisterpersonen, using the first attack as default
 - Added clickable sword emoji (⚔️) in NSC Aktion macro to trigger attack rolls with default values and pass damage formulas through the entire macro chain.
+- Improved NSC Aktion dialog layout and resizing behavior
 
 ## 1. Split Dialogs into Separate Macros
 - [x] Create a new macro called "DamageDialog"
@@ -77,9 +78,10 @@ Changelog:
 - [x] Create a user interface for managing zone armor values
 - [x] Implement a parade macro
 - [x] Implement wounds on Meisterpersonen influencing AT and PA
-- [ ] Implement a way to easily toggle between different weapon damages for the same character
+- [x] Implement a way to easily toggle between different weapons
 
 ## 9. Bugfixes
 - [x] Using the Damage macro on itself should be possible
 - [x] Using the Wounds macro on itself should be possible
 - [ ] The player that was hit should be able to click the buttons to apply the wounds and damage.
+- [ ] Fix the handling of advanced damage dice like 2W20

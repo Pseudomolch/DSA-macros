@@ -63,11 +63,17 @@ new Dialog({
     title: "DSA Meisterperson verwalten",
     content: `
     <style>
+        .dsa-dialog-container {
+            display: flex;
+            flex-direction: column;
+            height: 60vh;
+            max-height: 600px;
+        }
         .dsa-dialog { 
-            display: grid; 
-            grid-template-columns: 1fr; 
-            gap: 8px; 
-            padding-bottom: 8px;
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 8px;
+            margin-bottom: 8px;
         }
         .dsa-dialog input[type="number"], 
         .dsa-dialog input[type="text"] { 
@@ -79,6 +85,23 @@ new Dialog({
             text-align: center; 
             margin-bottom: 2px; 
             margin-top: 8px;
+        }
+        .dsa-dialog .token-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px;
+            margin-bottom: 16px;
+        }
+        .dsa-dialog .token-image {
+            width: 32px;
+            height: 32px;
+            border: none;
+        }
+        .dsa-dialog .token-name {
+            font-size: 24px;
+            flex: 1;
+            margin: 0;
         }
         .dsa-dialog .npc-row {
             display: grid;
@@ -94,7 +117,6 @@ new Dialog({
             gap: 8px;
         }
         .dsa-dialog .attacks-scroll-container {
-            max-height: 300px;
             overflow-y: auto;
             padding-right: 8px;
         }
@@ -105,6 +127,11 @@ new Dialog({
             margin-bottom: 8px;
             font-weight: bold;
             text-align: center;
+            position: sticky;
+            top: 0;
+            background: var(--color-bg, white);
+            padding: 4px 0;
+            z-index: 1;
         }
         .dsa-dialog .attack-row {
             display: grid;
@@ -124,80 +151,92 @@ new Dialog({
             width: 100%;
             margin-top: 8px;
         }
+        .dialog-buttons {
+            flex-shrink: 0;
+            padding: 8px;
+            border-top: 1px solid var(--color-border-light, #ddd);
+            background: var(--color-bg, white);
+        }
     </style>
-    <form class="dsa-dialog">
-        <div class="npc-row">
-            <div>
-                <label for="ini">INI</label>
-                <input type="number" id="ini" name="ini" value="${existingNPCData?.ini || 0}">
+    <div class="dsa-dialog-container">
+        <form class="dsa-dialog">
+            <div class="token-header">
+                <img class="token-image" src="${token.document.texture.src}" alt="${token.name}">
+                <h2 class="token-name">${token.name}</h2>
             </div>
-            <div>
-                <label for="pa">PA</label>
-                <input type="number" id="pa" name="pa" value="${existingNPCData?.pa || 0}">
-            </div>
-            <div>
-                <label for="lep">LeP</label>
-                <input type="number" id="lep" name="lep" value="${existingNPCData?.lep || 0}">
-            </div>
-            <div>
-                <label for="rs">RS</label>
-                <input type="number" id="rs" name="rs" value="${existingNPCData?.rs || 0}">
-            </div>
-            <div>
-                <label for="ko">KO</label>
-                <input type="number" id="ko" name="ko" value="${existingNPCData?.ko || 0}">
-            </div>
-        </div>
-        <div class="npc-row">
-            <div>
-                <label for="gs">GS</label>
-                <input type="number" id="gs" name="gs" value="${existingNPCData?.gs || 0}">
-            </div>
-            <div>
-                <label for="aup">AuP</label>
-                <input type="number" id="aup" name="aup" value="${existingNPCData?.aup || 0}">
-            </div>
-            <div>
-                <label for="mr">MR</label>
-                <input type="number" id="mr" name="mr" value="${existingNPCData?.mr || 0}">
-            </div>
-            <div>
-                <label for="gw">GW</label>
-                <input type="number" id="gw" name="gw" value="${existingNPCData?.gw || 0}">
-            </div>
-        </div>
-        <div class="attack-container">
-            <div class="attack-headers">
-                <div>Angriff Name</div>
-                <div>DK</div>
-                <div>AT</div>
-                <div>TP</div>
-                <div></div>
-            </div>
-            <div class="attacks-scroll-container">
-                <div id="attacks-container">
-                    ${(existingNPCData?.attacks || [{ name: '', dk: '', at: 0, tp: '' }]).map((attack, index) => `
-                        <div class="attack-row" data-index="${index}">
-                            <div>
-                                <input type="text" name="attackName_${index}" value="${attack.name}">
-                            </div>
-                            <div>
-                                <input type="text" name="dk_${index}" maxlength="1" value="${attack.dk}">
-                            </div>
-                            <div>
-                                <input type="number" name="at_${index}" value="${attack.at}">
-                            </div>
-                            <div>
-                                <input type="text" name="tp_${index}" value="${attack.tp}">
-                            </div>
-                            ${index > 0 ? `<i class="fas fa-times remove-attack"></i>` : ''}
-                        </div>
-                    `).join('')}
+            <div class="npc-row">
+                <div>
+                    <label for="ini">INI</label>
+                    <input type="number" id="ini" name="ini" value="${existingNPCData?.ini || 0}">
+                </div>
+                <div>
+                    <label for="pa">PA</label>
+                    <input type="number" id="pa" name="pa" value="${existingNPCData?.pa || 0}">
+                </div>
+                <div>
+                    <label for="lep">LeP</label>
+                    <input type="number" id="lep" name="lep" value="${existingNPCData?.lep || 0}">
+                </div>
+                <div>
+                    <label for="rs">RS</label>
+                    <input type="number" id="rs" name="rs" value="${existingNPCData?.rs || 0}">
+                </div>
+                <div>
+                    <label for="ko">KO</label>
+                    <input type="number" id="ko" name="ko" value="${existingNPCData?.ko || 0}">
                 </div>
             </div>
-            <button type="button" class="add-attack">Angriff hinzufügen</button>
-        </div>
-    </form>
+            <div class="npc-row">
+                <div>
+                    <label for="gs">GS</label>
+                    <input type="number" id="gs" name="gs" value="${existingNPCData?.gs || 0}">
+                </div>
+                <div>
+                    <label for="aup">AuP</label>
+                    <input type="number" id="aup" name="aup" value="${existingNPCData?.aup || 0}">
+                </div>
+                <div>
+                    <label for="mr">MR</label>
+                    <input type="number" id="mr" name="mr" value="${existingNPCData?.mr || 0}">
+                </div>
+                <div>
+                    <label for="gw">GW</label>
+                    <input type="number" id="gw" name="gw" value="${existingNPCData?.gw || 0}">
+                </div>
+            </div>
+            <div class="attack-container">
+                <div class="attack-headers">
+                    <div>Angriff</div>
+                    <div>DK</div>
+                    <div>AT</div>
+                    <div>TP</div>
+                    <div></div>
+                </div>
+                <div class="attacks-scroll-container">
+                    <div id="attacks-container">
+                        ${(existingNPCData?.attacks || [{ name: '', dk: '', at: 0, tp: '' }]).map((attack, index) => `
+                            <div class="attack-row" data-index="${index}">
+                                <div>
+                                    <input type="text" name="attackName_${index}" value="${attack.name}">
+                                </div>
+                                <div>
+                                    <input type="text" name="dk_${index}" maxlength="1" value="${attack.dk}">
+                                </div>
+                                <div>
+                                    <input type="number" name="at_${index}" value="${attack.at}">
+                                </div>
+                                <div>
+                                    <input type="text" name="tp_${index}" value="${attack.tp}">
+                                </div>
+                                ${index > 0 ? `<i class="fas fa-times remove-attack"></i>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <button type="button" class="add-attack">Angriff hinzufügen</button>
+            </div>
+        </form>
+    </div>
     `,
     buttons: {
         save: {
