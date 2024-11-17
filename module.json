@@ -41,5 +41,5 @@
     "socket": true,
     "url": "https://github.com/Pseudomolch/DSA-macros",
     "manifest": "https://raw.githubusercontent.com/Pseudomolch/DSA-macros/main/module.json",
-    "download": "https://raw.githubusercontent.com/Pseudomolch/DSA-macros/main/dsa-macros-v1.0.1.zip"
+    "download": "https://github.com/Pseudomolch/DSA-macros/archive/v1.0.1.zip"
 }
