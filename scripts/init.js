@@ -35,6 +35,63 @@ Hooks.once('init', async function() {
 
 Hooks.once('ready', async function() {
     console.log('DSA-Macros | Ready');
+
+    // Create macros in the compendium
+    const pack = game.packs.get('dsa-macros.dsa-macros');
+    if (pack) {
+        const macros = [
+            {
+                name: "Angriff",
+                type: "script",
+                command: "DSAMacros.DSAAttack.execute()",
+                img: "icons/svg/sword.svg"
+            },
+            {
+                name: "Parade",
+                type: "script",
+                command: "DSAMacros.DSAParade.execute()",
+                img: "icons/svg/shield.svg"
+            },
+            {
+                name: "Schaden",
+                type: "script",
+                command: "DSAMacros.DSADamage.execute()",
+                img: "icons/svg/blood.svg"
+            },
+            {
+                name: "Talent",
+                type: "script",
+                command: "DSAMacros.DSATalent.execute()",
+                img: "icons/svg/dice-target.svg"
+            },
+            {
+                name: "Zonenrüstung",
+                type: "script",
+                command: "DSAMacros.DSAZoneArmor.execute()",
+                img: "icons/svg/armor.svg"
+            },
+            {
+                name: "Zonenwunden",
+                type: "script",
+                command: "DSAMacros.DSAZoneWounds.execute()",
+                img: "icons/svg/heal.svg"
+            },
+            {
+                name: "NPC Aktion",
+                type: "script",
+                command: "DSAMacros.DSANPCAction.execute()",
+                img: "icons/svg/mystery-man.svg"
+            }
+        ];
+
+        // Create each macro in the compendium
+        for (let macro of macros) {
+            const exists = await pack.getDocument(macro.name);
+            if (!exists) {
+                await Macro.create(macro, {pack: pack.collection});
+            }
+        }
+    }
 });
 
 // Make classes available globally

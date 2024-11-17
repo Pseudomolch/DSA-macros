@@ -3,7 +3,7 @@
     "name": "dsa-macros",
     "title": "DSA 4.1 Macros",
     "description": "A collection of macros and utilities for DSA 4.1 in Foundry VTT",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "authors": [
         {
             "id": "david",
@@ -38,8 +38,17 @@
             "path": "./lang/de.json"
         }
     ],
+    "packs": [
+        {
+            "name": "dsa-macros",
+            "label": "DSA 4.1 Makros",
+            "path": "./packs/macros.db",
+            "type": "Macro",
+            "system": "dsa-41"
+        }
+    ],
     "socket": true,
     "url": "https://github.com/Pseudomolch/DSA-macros",
     "manifest": "https://raw.githubusercontent.com/Pseudomolch/DSA-macros/main/module.json",
-    "download": "https://github.com/Pseudomolch/DSA-macros/archive/v1.0.2.zip"
+    "download": "https://github.com/Pseudomolch/DSA-macros/archive/v1.0.3.zip"
 }
