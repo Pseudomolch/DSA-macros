@@ -1,5 +1,3 @@
-# TODO: Enhance Macro Functionality
-
 Changelog:
 - Added ⚔️ quick-attack with damage formulas in NSC Aktion macro
 - Created DamageDialog macro and updated Damage macro to use it.

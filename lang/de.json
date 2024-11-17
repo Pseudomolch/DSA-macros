@@ -1,0 +1,71 @@
+{
+    "DSA-MACROS": {
+        "dialogs": {
+            "attack": {
+                "title": "DSA 4.1 Angriff",
+                "attackValue": "Angriffswert",
+                "modifier": "Modifikator",
+                "confirm": "Würfeln",
+                "cancel": "Abbrechen"
+            },
+            "damage": {
+                "title": "DSA 4.1 Schaden",
+                "damageFormula": "Schadenswurf",
+                "modifier": "Modifikator",
+                "confirm": "Würfeln",
+                "cancel": "Abbrechen"
+            },
+            "parade": {
+                "title": "DSA 4.1 Parade",
+                "paradeValue": "Paradewert",
+                "modifier": "Modifikator",
+                "confirm": "Würfeln",
+                "cancel": "Abbrechen"
+            },
+            "talent": {
+                "title": "DSA 4.1 Talentprobe",
+                "attribute1": "Eigenschaft 1",
+                "attribute2": "Eigenschaft 2",
+                "attribute3": "Eigenschaft 3",
+                "talentValue": "Talentwert",
+                "modifier": "Modifikator",
+                "confirm": "Würfeln",
+                "cancel": "Abbrechen"
+            },
+            "zoneArmor": {
+                "title": "DSA 4.1 Zonenrüstung",
+                "head": "Kopf",
+                "chest": "Brust",
+                "back": "Rücken",
+                "belly": "Bauch",
+                "leftArm": "Linker Arm",
+                "rightArm": "Rechter Arm",
+                "leftLeg": "Linkes Bein",
+                "rightLeg": "Rechtes Bein",
+                "save": "Speichern",
+                "cancel": "Abbrechen"
+            },
+            "zoneWounds": {
+                "title": "DSA 4.1 Zonenwunden",
+                "head": "Kopf",
+                "chest": "Brust",
+                "back": "Rücken",
+                "belly": "Bauch",
+                "leftArm": "Linker Arm",
+                "rightArm": "Rechter Arm",
+                "leftLeg": "Linkes Bein",
+                "rightLeg": "Rechtes Bein",
+                "save": "Speichern",
+                "cancel": "Abbrechen"
+            }
+        },
+        "messages": {
+            "selectToken": "Bitte wähle einen Token aus.",
+            "criticalSuccess": "Kritischer Erfolg!",
+            "criticalFailure": "Patzer!",
+            "success": "Erfolg",
+            "failure": "Misserfolg",
+            "quality": "Qualität"
+        }
+    }
+}

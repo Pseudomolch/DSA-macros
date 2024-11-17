@@ -1,0 +1,91 @@
+/* DSA Macros Module Styles */
+
+/* Dialog Styles */
+.dsa-dialog {
+    display: grid;
+    gap: 10px;
+    padding: 10px;
+}
+
+.dsa-dialog input[type="number"],
+.dsa-dialog input[type="text"] {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #999;
+    border-radius: 3px;
+    text-align: center;
+}
+
+.dsa-dialog label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.dsa-dialog select {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #999;
+    border-radius: 3px;
+}
+
+.dsa-dialog button {
+    padding: 5px 10px;
+    border: 1px solid #999;
+    border-radius: 3px;
+    background: #f0f0f0;
+    cursor: pointer;
+}
+
+.dsa-dialog button:hover {
+    background: #e0e0e0;
+}
+
+/* Chat Message Styles */
+.dsa-chat-message {
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 3px;
+    margin: 5px 0;
+}
+
+.dsa-chat-message .header {
+    font-weight: bold;
+    margin-bottom: 5px;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 5px;
+}
+
+.dsa-chat-message .content {
+    margin-top: 5px;
+}
+
+.dsa-chat-message .result {
+    margin-top: 5px;
+    font-weight: bold;
+}
+
+.dsa-chat-message .success {
+    color: #2a9d8f;
+}
+
+.dsa-chat-message .failure {
+    color: #e76f51;
+}
+
+.dsa-chat-message .critical {
+    color: #e63946;
+    font-weight: bold;
+}
+
+/* Token Link Styles */
+.token-link {
+    cursor: pointer;
+    color: #4a4a4a;
+    text-decoration: underline;
+}
+
+.token-link:hover {
+    color: #2a2a2a;
+}
