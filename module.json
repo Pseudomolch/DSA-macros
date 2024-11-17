@@ -15,6 +15,15 @@
         "minimum": "10",
         "verified": "11"
     },
+    "relationships": {
+        "systems": [
+            {
+                "id": "dsa41",
+                "type": "system",
+                "manifest": "https://gitlab.com/foundry-vtt-dsa/dsa-4.1-core/dsa-4.1-system/-/raw/master/package.json"
+            }
+        ]
+    },
     "scripts": [
         "scripts/utils/npcParser.js",
         "scripts/utils/meisterpersonParser.js",
@@ -44,13 +53,6 @@
             "lang": "de",
             "name": "Deutsch",
             "path": "lang/de.json"
-        }
-    ],
-    "dependencies": [
-        {
-            "name": "dsa41",
-            "type": "system",
-            "manifest": "https://gitlab.com/foundry-vtt-dsa/dsa-4.1-core/dsa-4.1-system/-/master/package.json"
         }
     ],
     "socket": true,
