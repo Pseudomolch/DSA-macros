@@ -25,10 +25,17 @@ if (canvas.tokens.controlled.length === 1) {
     }
     
     if (meisterpersonAbility) {
-        const match = meisterpersonAbility.system.description.match(/Angriff (.+), DK [A-Z], AT (\d+),/);
-        if (match) {
-            attackName = match[1];
-            defaultAttackValue = match[2];
+        const lines = meisterpersonAbility.system.description.split('\n');
+        const attackRegex = /Angriff (.+), DK ([A-Z]), AT (\d+), TP (.+)/;
+        
+        // Find the first valid attack line
+        for (const line of lines) {
+            const match = line.match(attackRegex);
+            if (match) {
+                attackName = match[1];
+                defaultAttackValue = match[3];
+                break;
+            }
         }
     }
 }

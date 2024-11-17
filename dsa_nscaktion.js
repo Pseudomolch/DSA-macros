@@ -32,12 +32,17 @@ function parseNPCData(description) {
             [, data.gs, data.aup, data.mr, data.gw] = match2.map(v => v ? parseInt(v) : null);
         }
 
-        // Parse third line if it exists (attack information)
-        if (lines[2]) {
-            const match3 = lines[2].match(/Angriff (.+), DK ([A-Z]), AT (\d+), TP (.+)/);
-            if (match3) {
-                [, data.attackName, data.dk, data.at, data.tp] = match3;
-                data.at = parseInt(data.at);
+        // Parse attack lines (starting from line 3)
+        data.attacks = [];
+        for (let i = 2; i < lines.length; i++) {
+            const match = lines[i].match(/Angriff (.+), DK ([A-Z]), AT (\d+), TP (.+)/);
+            if (match) {
+                data.attacks.push({
+                    name: match[1],
+                    dk: match[2],
+                    at: parseInt(match[3]),
+                    tp: match[4]
+                });
             }
         }
     }
@@ -131,6 +136,7 @@ const dialogContent = `
         margin-bottom: 10px;
     }
     .header-container {
+        align-items: center;
         margin: 0 0 10px 0;
         padding: 0;
         border-bottom: 1px solid #ccc;
@@ -186,17 +192,21 @@ const dialogContent = `
             <h2>${token.name}</h2>
             <button class="refresh-button" title="Aktualisieren">🔄</button>
         </div>
+
         <div class="stat-line">
             INI ${npcData.ini}, PA ${npcData.pa}, LeP ${currentLep}/${npcData.maxLep}, RS ${npcData.rs}, KO ${npcData.ko}
         </div>
+
         <div class="stat-line">
             GS ${npcData.gs}, AuP ${npcData.aup}, MR ${npcData.mr}, GW ${npcData.gw}
         </div>
-        ${npcData.attackName ? `
+
+        ${npcData.attacks.map(attack => `
         <div class="stat-line">
-            Angriff ${npcData.attackName}, DK ${npcData.dk}, AT ${npcData.at}, TP ${npcData.tp}
+            ⚔️ ${attack.name}, DK ${attack.dk}, AT ${attack.at}, TP ${attack.tp}
         </div>
-        ` : ''}
+        `).join('')}
+
         ${woundEffects.length > 0 ? `
         <div class="wounds-list">
             <strong>Wunden:</strong><br>
@@ -244,4 +254,4 @@ let currentDialog = new Dialog({
     }
 }, {
     width: 400
-}).render(true); 
+}).render(true);

@@ -44,8 +44,18 @@ function getTPFromMeisterperson(actor) {
     const meisterpersonAbility = actor.items.find(item => item.type === "specialAbility" && item.name === "Meisterperson");
     if (!meisterpersonAbility) return null;
 
-    const match = meisterpersonAbility.system.description.match(/TP (.+)$/m);
-    return match ? match[1] : null;
+    const lines = meisterpersonAbility.system.description.split('\n');
+    const attackRegex = /Angriff (.+), DK ([A-Z]), AT (\d+), TP (.+)/;
+    
+    // Find the first valid attack line
+    for (const line of lines) {
+        const match = line.match(attackRegex);
+        if (match) {
+            return match[4];
+        }
+    }
+    
+    return null;
 }
 
 // Function to parse armor value
