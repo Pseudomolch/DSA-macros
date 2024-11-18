@@ -1,2 +1,33 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.npm
+*.tgz
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+*.sublime*
+*.code-workspace
+
+# Test coverage and cache
+coverage/
+.jest/
+jest-cache/
+.eslintcache
+*.lcov
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Example files
 examples/emaple_zonenschaden.js
 examples/example_zonenwunden.js

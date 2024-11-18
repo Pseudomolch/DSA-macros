@@ -9,7 +9,8 @@ export class DSANPCAction {
         }
 
         const actor = selectedToken.actor;
-        const parser = new game.modules.get('dsa-macros').api.utils.MeisterpersonParser(actor);
+        const module = game.modules.get('dsa-macros');
+        const parser = new module.api.utils.MeisterpersonParser(actor);
 
         if (!parser.hasMeisterpersonAbility()) {
             ui.notifications.error("Der ausgewählte Token hat keine Meisterperson-Fähigkeit.");
