@@ -1,46 +1,25 @@
 # Release Checklist
 
-## 0. Pre-Release Checks
-```bash
-# Check for uncommitted changes
-git status
+## 1. Pre-Release Checks
+- Run tests and ensure all pass
+- Check for uncommitted changes
+- Review changes and update changelog
 
-# If there are changes, commit them first
-git add .
-git commit -m "feat: describe your changes"
-git push origin main
-```
+## 2. Update Version Numbers
+- Update version in `module.json`
+- Update version in `package.json`
+- Update version flag in `packs/macros.db` for NPC Aktion macro
+- Update download URL in `module.json` to match new version
 
-## 1. Update Module Version
-1. Open `module.json`
-2. Update version number (e.g., "1.0.7" -> "1.0.8")
-3. Update download URL to match new version (e.g., "v1.0.7.zip" -> "v1.0.8.zip")
-
-## 2. Push Changes and Create Tag
-```bash
-# Add and commit module.json changes
-git add module.json
-git commit -m "chore: bump version to X.Y.Z"
-git push origin main
-
-# Create and push new version tag
-git tag -a vX.Y.Z -m "Version X.Y.Z"
-git push origin vX.Y.Z
-```
-
-## 3. Create GitHub Release
-```bash
-# Create release with pre-release flag and concise German notes (2 lines max)
-gh release create vX.Y.Z \
-  --prerelease \
-  --title "Version X.Y.Z" \
-  --notes "Hauptänderung in einem Satz.
-Weitere Änderungen in einem Satz."
-```
+## 3. Release Process
+- Commit and push all changes to main branch
+- Create and push new version tag
+- Create GitHub release with pre-release flag
+- Add concise German release notes (max 2 lines)
 
 ## Notes
 - Keep changelog notes concise and in German
 - Focus on user-facing changes
 - Use present tense in changelog
-- Version format: X.Y.Z (e.g., 1.0.8)
-- Tag format: vX.Y.Z (e.g., v1.0.8)
+- Version format: X.Y.Z (e.g., 1.0.11)
+- Tag format: vX.Y.Z (e.g., v1.0.11)
