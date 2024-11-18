@@ -50,14 +50,19 @@ describe('DSANPCAction', () => {
                         }
                     }
                 })
-            },
-            macros: {
-                getName: jest.fn().mockReturnValue({
-                    execute: jest.fn()
-                })
             }
         };
         global.game = mockGame;
+
+        // Mock DSAMacros global
+        global.DSAMacros = {
+            macros: {
+                DSAAttack: { execute: jest.fn() },
+                DSAParade: { execute: jest.fn() },
+                DSADamage: { execute: jest.fn() },
+                DSAZoneWounds: { execute: jest.fn() }
+            }
+        };
 
         // Mock UI notifications
         mockUI = {

@@ -168,12 +168,7 @@ export class DSAAttack {
                     if (callDamageButton) {
                         const clickHandler = async (event) => {
                             event.preventDefault();
-                            const damageMacro = game.macros.getName("damage");
-                            if (damageMacro) {
-                                damageMacro.execute();
-                            } else {
-                                ui.notifications.error("damage macro not found");
-                            }
+                            await DSAMacros.macros.DSADamage.execute();
                         };
 
                         callDamageButton.addEventListener('click', clickHandler);

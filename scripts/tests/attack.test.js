@@ -41,9 +41,6 @@ describe('DSAAttack', () => {
                         }
                     }
                 })
-            },
-            macros: {
-                getName: jest.fn()
             }
         };
         global.game = mockGame;
@@ -86,6 +83,13 @@ describe('DSAAttack', () => {
         // Mock Hooks
         global.Hooks = {
             once: jest.fn()
+        };
+
+        // Mock DSAMacros global
+        global.DSAMacros = {
+            macros: {
+                DSADamage: { execute: jest.fn() }
+            }
         };
 
         // Reset all mocks

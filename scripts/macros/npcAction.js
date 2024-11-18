@@ -213,11 +213,19 @@ export class DSANPCAction {
                 // Add click handlers for action buttons
                 html.find('.action-button').click(async (event) => {
                     const macroName = event.currentTarget.dataset.macro;
-                    const macro = game.macros.getName(macroName);
-                    if (macro) {
-                        await macro.execute();
-                    } else {
-                        ui.notifications.error(`Makro ${macroName} nicht gefunden`);
+                    switch(macroName) {
+                        case 'attack':
+                            await DSAMacros.macros.DSAAttack.execute();
+                            break;
+                        case 'parade':
+                            await DSAMacros.macros.DSAParade.execute();
+                            break;
+                        case 'damage':
+                            await DSAMacros.macros.DSADamage.execute();
+                            break;
+                        case 'zoneWounds':
+                            await DSAMacros.macros.DSAZoneWounds.execute();
+                            break;
                     }
                 });
 
@@ -232,12 +240,7 @@ export class DSANPCAction {
                         damageFormula: attackData.tp || ""
                     });
 
-                    const attackMacro = game.macros.getName("attack");
-                    if (attackMacro) {
-                        attackMacro.execute();
-                    } else {
-                        ui.notifications.error("attack macro not found");
-                    }
+                    await DSAMacros.macros.DSAAttack.execute();
                 });
             }
         }, {
