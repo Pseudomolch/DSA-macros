@@ -25,7 +25,7 @@ describe('DSADamage', () => {
                     api: {
                         dialogs: {
                             DamageDialog: mockDialog,
-                            WoundsDialog: {
+                            ZoneWoundsDialog: {
                                 execute: jest.fn().mockResolvedValue(1)
                             }
                         }
@@ -150,7 +150,7 @@ describe('DSADamage', () => {
             mockGame.modules.get.mockReturnValue({
                 api: {
                     dialogs: {
-                        WoundsDialog: mockWoundsDialog
+                        ZoneWoundsDialog: mockWoundsDialog
                     }
                 }
             });
@@ -347,7 +347,7 @@ describe('DSADamage', () => {
             mockGame.modules.get.mockReturnValue({
                 api: {
                     dialogs: {
-                        WoundsDialog: mockWoundsDialog
+                        ZoneWoundsDialog: mockWoundsDialog
                     }
                 }
             });

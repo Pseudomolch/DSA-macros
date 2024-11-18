@@ -205,7 +205,7 @@ export class DSADamage {
         
         if (wounds > 0) {
             // Show wounds dialog
-            wounds = await game.modules.get('dsa-macros').api.dialogs.WoundsDialog.execute(wounds, woundThresholds);
+            wounds = await game.modules.get('dsa-macros').api.dialogs.ZoneWoundsDialog.execute(wounds, woundThresholds);
             
             // Create wounds message
             const messageContent = `

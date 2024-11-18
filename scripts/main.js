@@ -72,7 +72,7 @@ class DSAMacros {
             },
             dialogs: {
                 DamageDialog: globalThis.DamageDialog,
-                WoundsDialog: globalThis.WoundsDialog
+                ZoneWoundsDialog: globalThis.ZoneWoundsDialog
             },
             macros: {
                 attack: globalThis.DSAAttack,

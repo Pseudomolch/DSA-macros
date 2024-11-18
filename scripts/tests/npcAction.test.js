@@ -6,9 +6,8 @@ describe('DSANPCAction', () => {
     let mockCanvas;
     let mockGame;
     let mockUI;
-    let mockDialog;
     let mockToken;
-    let mockActor;
+    let mockNPCDialog;
 
     beforeEach(() => {
         // Mock canvas and tokens
@@ -28,7 +27,7 @@ describe('DSANPCAction', () => {
         };
         global.canvas = mockCanvas;
 
-        // Mock game object with single attack
+        // Mock game object with module API
         mockGame = {
             modules: {
                 get: jest.fn().mockReturnValue({
@@ -47,6 +46,17 @@ describe('DSANPCAction', () => {
                                     ];
                                 }
                             }
+                        },
+                        dialogs: {
+                            NPCDialog: {
+                                execute: jest.fn()
+                            }
+                        },
+                        macros: {
+                            DSAAttack: { execute: jest.fn() },
+                            DSAParade: { execute: jest.fn() },
+                            DSADamage: { execute: jest.fn() },
+                            DSAZoneWounds: { execute: jest.fn() }
                         }
                     }
                 })
@@ -54,15 +64,8 @@ describe('DSANPCAction', () => {
         };
         global.game = mockGame;
 
-        // Mock DSAMacros global
-        global.DSAMacros = {
-            macros: {
-                DSAAttack: { execute: jest.fn() },
-                DSAParade: { execute: jest.fn() },
-                DSADamage: { execute: jest.fn() },
-                DSAZoneWounds: { execute: jest.fn() }
-            }
-        };
+        // Store reference to mock NPCDialog for easier access
+        mockNPCDialog = mockGame.modules.get().api.dialogs.NPCDialog;
 
         // Mock UI notifications
         mockUI = {
@@ -71,13 +74,6 @@ describe('DSANPCAction', () => {
             }
         };
         global.ui = mockUI;
-
-        // Mock Dialog class
-        mockDialog = jest.fn().mockReturnValue({
-            render: jest.fn().mockReturnValue(true),
-            close: jest.fn()
-        });
-        global.Dialog = mockDialog;
     });
 
     afterEach(() => {
@@ -111,72 +107,44 @@ describe('DSANPCAction', () => {
         expect(ui.notifications.error).toHaveBeenCalledWith('Keine Angriffe für diesen NSC gefunden.');
     });
 
-    test('execute() should create dialog with wound effects if present', async () => {
-        mockToken.actor.effects = [
-            {
-                label: '1 Wunde',
-                flags: {
-                    core: {
-                        statusId: 'wound_kopf'
-                    }
-                }
-            }
-        ];
-
-        await DSANPCAction.execute();
-        expect(Dialog).toHaveBeenCalled();
-        const dialogArgs = Dialog.mock.calls[0][0];
-        expect(dialogArgs.content).toContain('Wunden:');
-        expect(dialogArgs.content).toContain('1 Wunde');
-    });
-
-    test('execute() should create dialog with attack options', async () => {
-        await DSANPCAction.execute();
-        expect(Dialog).toHaveBeenCalled();
-        const dialogArgs = Dialog.mock.calls[0][0];
-        expect(dialogArgs.content).toContain('Test Attack');
-        expect(dialogArgs.content).toContain('DK H, AT 10, TP 1d6+4');
-    });
-
-    test('execute() should handle multiple attacks correctly', async () => {
-        // Mock multiple attacks
-        const mockParserMultipleAttacks = {
-            hasMeisterpersonAbility: () => true,
-            parseAttacks: () => [
-                { name: 'Sword Attack', at: 12, tp: '1d6+6', dk: 'N' },
-                { name: 'Claw Attack', at: 10, tp: '1d6+2', dk: 'H' },
-                { name: 'Bite Attack', at: 8, tp: '2d6+4', dk: 'N' }
-            ]
-        };
-        game.modules.get().api.utils.MeisterpersonParser = jest.fn(() => mockParserMultipleAttacks);
-
-        await DSANPCAction.execute();
-        expect(Dialog).toHaveBeenCalled();
-        const dialogArgs = Dialog.mock.calls[0][0];
-        
-        // Check if all attacks are present in the dialog
-        const attacks = mockParserMultipleAttacks.parseAttacks();
-        attacks.forEach(attack => {
-            // Check attack name
-            expect(dialogArgs.content).toContain(attack.name);
-            
-            // Check attack stats
-            const statsText = `DK ${attack.dk}, AT ${attack.at}, TP ${attack.tp}`;
-            expect(dialogArgs.content).toContain(statsText);
-            
-            // Check data attribute
-            const dataAttribute = `data-attack='{"name":"${attack.name}","at":${attack.at},"tp":"${attack.tp}","dk":"${attack.dk}"}'`;
-            expect(dialogArgs.content).toContain(dataAttribute);
+    test('execute() should handle attack action with specific attack data', async () => {
+        const testAttack = { name: 'Test Attack', at: 10, tp: '1d6+4', dk: 'H' };
+        mockNPCDialog.execute.mockResolvedValue({ 
+            action: 'attack',
+            attack: testAttack
         });
 
-        // Check that we have the correct number of attack entries
-        const attackDivCount = (dialogArgs.content.match(/<div class="attack-item">/g) || []).length;
-        expect(attackDivCount).toBe(3);
+        await DSANPCAction.execute();
 
-        // Check that action buttons are present
-        expect(dialogArgs.content).toContain('data-macro="attack"');
-        expect(dialogArgs.content).toContain('data-macro="parade"');
-        expect(dialogArgs.content).toContain('data-macro="damage"');
-        expect(dialogArgs.content).toContain('data-macro="zoneWounds"');
+        // Check if attack data was set
+        expect(mockToken.document.setFlag).toHaveBeenCalledWith('world', 'attackData', {
+            defaultAttackValue: testAttack.at,
+            attackName: testAttack.name,
+            damageFormula: testAttack.tp
+        });
+
+        // Check if attack macro was executed
+        expect(game.modules.get().api.macros.DSAAttack.execute).toHaveBeenCalled();
+    });
+
+    test('execute() should handle parade action', async () => {
+        mockNPCDialog.execute.mockResolvedValue({ action: 'parade' });
+
+        await DSANPCAction.execute();
+        expect(game.modules.get().api.macros.DSAParade.execute).toHaveBeenCalled();
+    });
+
+    test('execute() should handle damage action', async () => {
+        mockNPCDialog.execute.mockResolvedValue({ action: 'damage' });
+
+        await DSANPCAction.execute();
+        expect(game.modules.get().api.macros.DSADamage.execute).toHaveBeenCalled();
+    });
+
+    test('execute() should handle zoneWounds action', async () => {
+        mockNPCDialog.execute.mockResolvedValue({ action: 'zoneWounds' });
+
+        await DSANPCAction.execute();
+        expect(game.modules.get().api.macros.DSAZoneWounds.execute).toHaveBeenCalled();
     });
 });

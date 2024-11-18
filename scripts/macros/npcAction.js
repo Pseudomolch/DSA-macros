@@ -86,165 +86,31 @@ export class DSANPCAction {
             };
         });
 
-        // Create dialog content
-        const dialogContent = `
-        <style>
-            .dsa-dialog {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                padding-bottom: 8px;
-            }
-            .dsa-stats {
-                background-color: #f0f0f0;
-                border: 1px solid #ccc;
-                padding: 10px;
-                border-radius: 3px;
-                margin-bottom: 10px;
-            }
-            .header-container {
-                align-items: center;
-                margin: 0 0 10px 0;
-                padding: 0;
-                border-bottom: 1px solid #ccc;
-                display: grid;
-                grid-template-columns: 1fr auto;
-                align-items: center;
-            }
-            .header-container h2 {
-                margin: 0;
-                padding: 0;
-            }
-            .refresh-button {
-                cursor: pointer;
-                background: none;
-                border: none;
-                padding: 0;
-                font-size: 1.2em;
-                width: 1.5em;
-                text-align: center;
-            }
-            .refresh-button:hover {
-                transform: rotate(180deg);
-                transition: transform 0.5s;
-            }
-            .stat-line { margin: 5px 0; }
-            .wounds-list {
-                margin-top: 10px;
-                color: red;
-            }
-            .action-buttons {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 8px;
-            }
-            .action-button {
-                padding: 5px;
-                text-align: center;
-                background: #4b4a44;
-                color: #ffffff;
-                border: 1px solid #7a7971;
-                border-radius: 3px;
-                cursor: pointer;
-            }
-            .action-button:hover {
-                background: #7a7971;
-            }
-            .attack-list { margin-top: 10px; }
-            .attack-item {
-                display: flex;
-                align-items: center;
-                margin: 5px 0;
-                gap: 8px;
-            }
-            .attack-emoji {
-                cursor: pointer;
-                user-select: none;
-            }
-            .attack-emoji:hover {
-                transform: scale(1.2);
-            }
-            .attack-name { flex: 1; }
-        </style>
-        <div class="dsa-dialog">
-            <div class="dsa-stats">
-                <div class="header-container">
-                    <h2>${selectedToken.name}</h2>
-                    <button class="refresh-button" title="Aktualisieren">🔄</button>
-                </div>
+        // Show dialog and get result
+        const result = await module.api.dialogs.NPCDialog.execute(selectedToken, attacks, woundEffects, parser);
+        if (!result) return;
 
-                <div class="attack-list">
-                    ${attacks.map(attack => `
-                        <div class="attack-item">
-                            <span class="attack-emoji" data-attack='${JSON.stringify(attack)}'>⚔️</span>
-                            <span class="attack-name">${attack.name}</span>
-                            <span class="attack-stats">DK ${attack.dk}, AT ${attack.at}, TP ${attack.tp}</span>
-                        </div>
-                    `).join('')}
-                </div>
-
-                ${woundEffects.length > 0 ? `
-                <div class="wounds-list">
-                    <strong>Wunden:</strong><br>
-                    ${woundEffects.map(wound => `• ${wound.label} (${wound.modifiers.join(', ')})`).join('<br>')}
-                </div>
-                ` : ''}
-            </div>
-            <div class="action-buttons">
-                <button class="action-button" data-macro="attack">Attacke</button>
-                <button class="action-button" data-macro="parade">Parade</button>
-                <button class="action-button" data-macro="damage">Schaden</button>
-                <button class="action-button" data-macro="zoneWounds">Wunden</button>
-            </div>
-        </div>`;
-
-        // Create and render the dialog
-        let currentDialog = new Dialog({
-            title: "DSA NSC Aktionen",
-            content: dialogContent,
-            buttons: {},
-            render: (html) => {
-                // Add click handler for refresh button
-                html.find('.refresh-button').click(async () => {
-                    currentDialog.close();
-                    await this.execute();
-                });
-
-                // Add click handlers for action buttons
-                html.find('.action-button').click(async (event) => {
-                    const macroName = event.currentTarget.dataset.macro;
-                    switch(macroName) {
-                        case 'attack':
-                            await DSAMacros.macros.DSAAttack.execute();
-                            break;
-                        case 'parade':
-                            await DSAMacros.macros.DSAParade.execute();
-                            break;
-                        case 'damage':
-                            await DSAMacros.macros.DSADamage.execute();
-                            break;
-                        case 'zoneWounds':
-                            await DSAMacros.macros.DSAZoneWounds.execute();
-                            break;
-                    }
-                });
-
-                // Add event listeners for attack rolls
-                html.find('.attack-emoji').click(async function(event) {
-                    event.preventDefault();
-                    const attackData = JSON.parse(this.dataset.attack);
+        // Handle actions
+        switch (result.action) {
+            case 'attack':
+                if (result.attack) {
                     await selectedToken.document.setFlag("world", "attackData", {
-                        attackName: attackData.name || "",
-                        defaultAttackValue: parseInt(attackData.at) || 0,
-                        attackModifier: 0,
-                        damageFormula: attackData.tp || ""
+                        defaultAttackValue: result.attack.at,
+                        attackName: result.attack.name,
+                        damageFormula: result.attack.tp
                     });
-
-                    await DSAMacros.macros.DSAAttack.execute();
-                });
-            }
-        }, {
-            width: 400
-        }).render(true);
+                }
+                await module.api.macros.DSAAttack.execute();
+                break;
+            case 'parade':
+                await module.api.macros.DSAParade.execute();
+                break;
+            case 'damage':
+                await module.api.macros.DSADamage.execute();
+                break;
+            case 'zoneWounds':
+                await module.api.macros.DSAZoneWounds.execute();
+                break;
+        }
     }
 }
