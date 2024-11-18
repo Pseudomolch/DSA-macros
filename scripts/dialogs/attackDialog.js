@@ -3,14 +3,14 @@ export class AttackDialog {
     static async execute(defaultAttackValue = "", attackName = "", attackModifier = 0) {
         return new Promise((resolve) => {
             new Dialog({
-                title: "DSA 4.1 Attacke",
+                title: "DSA 4.1 Angriffsprobe",
                 content: `
                 <style>
                     .dsa-dialog { 
                         display: grid; 
-                        grid-template-columns: repeat(2, 1fr); 
-                        gap: 10px; 
-                        padding-bottom: 10px;
+                        grid-template-columns: 1fr; 
+                        gap: 8px; 
+                        padding-bottom: 8px;
                     }
                     .dsa-dialog input[type="number"] { 
                         width: 100%; 
@@ -20,56 +20,55 @@ export class AttackDialog {
                         display: block; 
                         text-align: center; 
                         margin-bottom: 2px; 
+                        margin-top: 8px;
                     }
-                    .full-width {
-                        grid-column: 1 / -1;
+                    .dsa-dialog .modifiers {
+                        display: grid;
+                        grid-template-columns: repeat(3, 1fr);
+                        gap: 8px;
+                    }
+                    .dialog-buttons {
+                        margin-top: 8px;
                     }
                 </style>
                 <form class="dsa-dialog">
-                    <div class="full-width">
-                        <label for="attackValue">Attackewert</label>
-                        <input type="number" id="attackValue" name="attackValue" value="${defaultAttackValue}">
-                    </div>
                     <div>
-                        <label for="modifier">Modifikator</label>
-                        <input type="number" id="modifier" name="modifier" value="${attackModifier}">
+                        <label for="attackValue">Attacke</label>
+                        <input id="attackValue" type="number" value="${defaultAttackValue}" required>
                     </div>
-                    <div>
-                        <label for="wuchtschlag">Wuchtschlag</label>
-                        <input type="number" id="wuchtschlag" name="wuchtschlag" value="0">
-                    </div>
-                    <div class="full-width">
-                        <label for="finte">Finte</label>
-                        <input type="number" id="finte" name="finte" value="0">
+                    <div class="modifiers">
+                        <div>
+                            <label for="modifier">Mod</label>
+                            <input id="modifier" type="number" value="${attackModifier}">
+                        </div>
+                        <div>
+                            <label for="wuchtschlag">Wuchtschlag</label>
+                            <input id="wuchtschlag" type="number" value="0">
+                        </div>
+                        <div>
+                            <label for="finte">Finte</label>
+                            <input id="finte" type="number" value="0">
+                        </div>
                     </div>
                 </form>`,
                 buttons: {
                     roll: {
                         label: "Würfeln",
                         callback: (html) => {
-                            const attackValue = parseInt(html.find('#attackValue').val()) || 0;
-                            const modifier = parseInt(html.find('#modifier').val()) || 0;
-                            const wuchtschlag = parseInt(html.find('#wuchtschlag').val()) || 0;
-                            const finte = parseInt(html.find('#finte').val()) || 0;
-                            
                             resolve({
-                                attackValue,
-                                modifier,
-                                wuchtschlag,
-                                finte,
-                                attackName
+                                attackValue: parseInt(html.find('#attackValue')[0].value),
+                                modifier: parseInt(html.find('#modifier')[0].value) || 0,
+                                wuchtschlag: parseInt(html.find('#wuchtschlag')[0].value) || 0,
+                                finte: parseInt(html.find('#finte')[0].value) || 0,
+                                attackName: attackName
                             });
                         }
-                    },
-                    cancel: {
-                        label: "Abbrechen",
-                        callback: () => resolve(null)
                     }
                 },
                 default: "roll",
                 render: html => setTimeout(() => html.find('#attackValue').focus(), 0)
             }, {
-                width: 300
+                width: 225
             }).render(true);
         });
     }

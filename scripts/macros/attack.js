@@ -1,4 +1,6 @@
 // DSA Attack Macro
+import { MeisterpersonParser } from '../utils/meisterpersonParser.js';
+
 export class DSAAttack {
     static async execute() {
         let selectedToken = null;
@@ -20,6 +22,33 @@ export class DSAAttack {
                 
                 // Clear the flag after reading
                 selectedToken.document.unsetFlag("world", "attackData");
+            } else {
+                // Use MeisterpersonParser to get attack data
+                const parser = new MeisterpersonParser(selectedToken.actor);
+                if (parser.hasMeisterpersonAbility()) {
+                    const attacks = parser.parseAttacks();
+                    if (attacks.length > 0) {
+                        const firstAttack = attacks[0];
+                        attackName = firstAttack.name;
+                        defaultAttackValue = String(firstAttack.at);
+                        damageFormula = firstAttack.tp;
+                    }
+                }
+                
+                // Get attack modifiers from active effects
+                const attackEffects = selectedToken.actor.effects.filter(e => 
+                    e.changes.some(c => c.key === "system.base.combatAttributes.active.baseAttack.value")
+                );
+                
+                for (const effect of attackEffects) {
+                    const attackChanges = effect.changes.filter(c => 
+                        c.key === "system.base.combatAttributes.active.baseAttack.value"
+                    );
+                    for (const change of attackChanges) {
+                        // Flip the sign of the modifier (e.g. -4 becomes +4)
+                        attackModifier -= Number(change.value);
+                    }
+                }
             }
         } else {
             ui.notifications.error("Bitte wähle genau einen Token aus.");
@@ -44,84 +73,116 @@ export class DSAAttack {
 
         // Perform the initial attack roll
         const roll = await new Roll("1d20").roll({async: true});
-        const rollTotal = roll.total;
-        
-        // Calculate the final attack value
-        const finalAttackValue = attackValues.attackValue - totalModifier;
-        
-        // Determine success and critical hits
-        const isCriticalSuccess = rollTotal === 1;
-        const isCriticalFailure = rollTotal === 20;
-        const isSuccess = rollTotal <= finalAttackValue || isCriticalSuccess;
-        
-        // Create the chat message content
+        const naturalRoll = roll.total;
+        const finalRoll = naturalRoll + totalModifier;
+
+        // Handle critical hits and failures
+        let result;
+        let confirmationRoll;
+        let confirmationFinalRoll;
+
+        if (naturalRoll === 1 || naturalRoll === 20) {
+            const confirmRoll = await new Roll("1d20").roll({async: true});
+            confirmationRoll = confirmRoll.total;
+            confirmationFinalRoll = confirmationRoll + totalModifier;
+        }
+
+        if (naturalRoll === 1) {
+            result = confirmationFinalRoll <= attackValues.attackValue ? "Kritischer Erfolg" : "Erfolg";
+        } else if (naturalRoll === 20) {
+            result = confirmationFinalRoll > attackValues.attackValue ? "Patzer" : "Fehlschlag";
+        } else {
+            result = finalRoll <= attackValues.attackValue ? "Erfolg" : "Fehlschlag";
+        }
+
+        // Create message content
         let messageContent = `<div style="background-color: #f0f0f0; border: 1px solid #ccc; padding: 5px; border-radius: 3px;">`;
-        messageContent += `<strong>Attacke${attackValues.attackName ? ` (${attackValues.attackName})` : ''}</strong><br>`;
-        messageContent += `Würfelwurf: ${rollTotal}<br>`;
-        messageContent += `Attackewert: ${attackValues.attackValue}`;
-        
-        if (totalModifier !== 0) {
-            messageContent += ` ${totalModifier >= 0 ? '+' : ''}${totalModifier}`;
+
+        if (selectedToken && attackValues.attackName) {
+            messageContent += `<strong>${selectedToken.name}</strong> attackiert mit <strong>${attackValues.attackName}</strong><br>`;
         }
-        
-        if (attackValues.wuchtschlag !== 0) {
-            messageContent += `<br>Wuchtschlag: ${attackValues.wuchtschlag}`;
+
+        messageContent += `<strong>Attacke:</strong> ${attackValues.attackValue}<br>`;
+
+        if (naturalRoll === 1 || naturalRoll === 20) {
+            messageContent += `<strong>Wurf:</strong> ${naturalRoll}<br>`;
+            messageContent += `<strong>Bestätigungswurf:</strong> ${confirmationRoll}`;
+            
+            let modParts = [];
+            if (attackValues.modifier !== 0) modParts.push(`${attackValues.modifier} Mod`);
+            if (attackValues.wuchtschlag !== 0) modParts.push(`${attackValues.wuchtschlag} Wuchtschlag`);
+            if (attackValues.finte !== 0) modParts.push(`${attackValues.finte} Finte`);
+            
+            if (modParts.length > 0) {
+                messageContent += ` + ${modParts.join(' + ')} = ${confirmationFinalRoll}`;
+            }
+            
+            messageContent += `<br>`;
+        } else {
+            messageContent += `<strong>Wurf:</strong> ${naturalRoll}`;
+            
+            let modParts = [];
+            if (attackValues.modifier !== 0) modParts.push(`${attackValues.modifier} Mod`);
+            if (attackValues.wuchtschlag !== 0) modParts.push(`${attackValues.wuchtschlag} Wuchtschlag`);
+            if (attackValues.finte !== 0) modParts.push(`${attackValues.finte} Finte`);
+            
+            if (modParts.length > 0) {
+                messageContent += ` + ${modParts.join(' + ')} = ${finalRoll}`;
+            }
+            
+            messageContent += `<br>`;
         }
-        
-        if (attackValues.finte !== 0) {
-            messageContent += `<br>Finte: ${attackValues.finte}`;
+
+        messageContent += `<span style="color: ${result.includes("Erfolg") ? "green" : "red"};">${result}</span>`;
+
+        // Add clickable icon for successful attacks
+        if (result.includes("Erfolg")) {
+            messageContent += ` <a class="call-damage" data-crit="${result === "Kritischer Erfolg"}" data-wuchtschlag="${attackValues.wuchtschlag}">⚔️</a>`;
         }
-        
-        messageContent += `<br><strong>Ergebnis: ${isSuccess ? 'Erfolg' : 'Misserfolg'}</strong>`;
-        
-        if (isCriticalSuccess) {
-            messageContent += `<br><em>Meisterliche Attacke!</em>`;
-        } else if (isCriticalFailure) {
-            messageContent += `<br><em>Patzer!</em>`;
+
+        if (attackValues.finte > 0 && result.includes("Erfolg")) {
+            messageContent += `<br>Mit Finte (${attackValues.finte})`;
         }
-        
         messageContent += `</div>`;
 
-        // Add damage button if attack was successful and damage formula exists
-        if (isSuccess && damageFormula) {
-            messageContent += `
-            <div class="card-buttons">
-                <button class="call-damage">
-                    Schaden würfeln (${damageFormula})
-                </button>
-            </div>`;
-        }
-
         // Create and send the chat message
-        const chatData = {
+        const chatMessage = await ChatMessage.create({
             content: messageContent,
             speaker: ChatMessage.getSpeaker({ token: selectedToken })
-        };
+        });
 
-        const chatMessage = await ChatMessage.create(chatData);
-
-        // Add event listener for damage button if it exists
-        if (isSuccess && damageFormula) {
-            const messageElement = document.querySelector(`[data-message-id="${chatMessage.id}"]`);
-            const callDamageButton = messageElement.querySelector('.call-damage');
-
-            if (callDamageButton) {
-                const clickHandler = async () => {
-                    // Store attack data for damage calculation
-                    await selectedToken.document.setFlag("world", "attackData", {
-                        damageFormula: damageFormula,
-                        kritisch: isCriticalSuccess
-                    });
-
-                    // Call the damage macro
-                    await game.modules.get('dsa-macros').api.macros.DSADamage.execute();
-                };
-
-                callDamageButton.addEventListener('click', clickHandler);
-                Hooks.once(`deleteMessage${chatMessage.id}`, () => {
-                    callDamageButton.removeEventListener('click', clickHandler);
+        // Handle damage roll setup if successful
+        if (result.includes("Erfolg")) {
+            if (selectedToken) {
+                await selectedToken.document.setFlag("world", "attackData", {
+                    kritisch: result === "Kritischer Erfolg",
+                    wuchtschlag: attackValues.wuchtschlag,
+                    damageFormula: damageFormula
                 });
             }
+
+            setTimeout(() => {
+                const messageElement = document.querySelector(`[data-message-id="${chatMessage.id}"]`);
+                if (messageElement) {
+                    const callDamageButton = messageElement.querySelector('.call-damage');
+                    if (callDamageButton) {
+                        const clickHandler = async (event) => {
+                            event.preventDefault();
+                            const damageMacro = game.macros.getName("dsa_damage");
+                            if (damageMacro) {
+                                damageMacro.execute();
+                            } else {
+                                ui.notifications.error("dsa_damage macro not found");
+                            }
+                        };
+
+                        callDamageButton.addEventListener('click', clickHandler);
+                        Hooks.once(`deleteMessage${chatMessage.id}`, () => {
+                            callDamageButton.removeEventListener('click', clickHandler);
+                        });
+                    }
+                }
+            }, 100);
         }
     }
 }

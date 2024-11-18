@@ -1,4 +1,5 @@
 // DSA 4.1 Macros Module
+import { MeisterpersonParser } from './utils/meisterpersonParser.js';
 
 class DSAMacros {
     static ID = 'dsa-macros';
@@ -67,7 +68,7 @@ class DSAMacros {
     static get api() {
         return {
             utils: {
-                MeisterpersonParser: globalThis.MeisterpersonParser
+                MeisterpersonParser
             },
             dialogs: {
                 DamageDialog: globalThis.DamageDialog,
