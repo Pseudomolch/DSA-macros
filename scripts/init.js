@@ -17,7 +17,6 @@ import { ZoneArmorDialog } from './dialogs/zoneArmorDialog.js';
 import { ZoneWoundsDialog } from './dialogs/zoneWoundsDialog.js';
 
 // Import utilities
-import { NPCParser } from './utils/npcParser.js';
 import { MeisterpersonParser } from './utils/meisterpersonParser.js';
 
 // Create API object
@@ -41,10 +40,26 @@ const api = {
         ZoneWoundsDialog
     },
     utils: {
-        NPCParser,
         MeisterpersonParser
     }
 };
+
+// Function to clean up old macros
+async function cleanupOldMacros() {
+    const currentVersion = game.modules.get('dsa-macros').version;
+    
+    // Get all macros in the world
+    const worldMacros = game.macros.filter(m => 
+        m.name === "NPC Aktion" && 
+        (!m.flags["dsa-macros"]?.version || m.flags["dsa-macros"].version < currentVersion)
+    );
+
+    // Delete old versions
+    for (const macro of worldMacros) {
+        await macro.delete();
+        ui.notifications.info(`Alte Version von "${macro.name}" wurde entfernt.`);
+    }
+}
 
 Hooks.once('init', async function() {
     console.log('DSA-Macros | Initializing DSA Macros Module');
@@ -64,6 +79,9 @@ Hooks.once('init', async function() {
 
 Hooks.once('ready', async function() {
     console.log('DSA-Macros | Ready');
+    
+    // Clean up old macros when the module is updated
+    await cleanupOldMacros();
 });
 
 // Make classes available globally
