@@ -1,5 +1,16 @@
 # Release Checklist
 
+## 0. Pre-Release Checks
+```bash
+# Check for uncommitted changes
+git status
+
+# If there are changes, commit them first
+git add .
+git commit -m "feat: describe your changes"
+git push origin main
+```
+
 ## 1. Update Module Version
 1. Open `module.json`
 2. Update version number (e.g., "1.0.7" -> "1.0.8")
