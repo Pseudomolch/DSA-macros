@@ -191,10 +191,10 @@ export class DSANPCAction {
                 ` : ''}
             </div>
             <div class="action-buttons">
-                <button class="action-button" data-macro="dsa_attack">Attacke</button>
-                <button class="action-button" data-macro="dsa_parade">Parade</button>
-                <button class="action-button" data-macro="dsa_damage">Schaden</button>
-                <button class="action-button" data-macro="dsa_zone_wounds">Wunden</button>
+                <button class="action-button" data-macro="attack">Attacke</button>
+                <button class="action-button" data-macro="parade">Parade</button>
+                <button class="action-button" data-macro="damage">Schaden</button>
+                <button class="action-button" data-macro="zoneWounds">Wunden</button>
             </div>
         </div>`;
 
@@ -232,11 +232,11 @@ export class DSANPCAction {
                         damageFormula: attackData.tp || ""
                     });
 
-                    const attackMacro = game.macros.getName("dsa_attack");
+                    const attackMacro = game.macros.getName("attack");
                     if (attackMacro) {
                         attackMacro.execute();
                     } else {
-                        ui.notifications.error("dsa_attack macro not found");
+                        ui.notifications.error("attack macro not found");
                     }
                 });
             }

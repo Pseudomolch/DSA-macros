@@ -28,7 +28,7 @@ describe('DSANPCAction', () => {
         };
         global.canvas = mockCanvas;
 
-        // Mock game object
+        // Mock game object with single attack
         mockGame = {
             modules: {
                 get: jest.fn().mockReturnValue({
@@ -131,5 +131,47 @@ describe('DSANPCAction', () => {
         const dialogArgs = Dialog.mock.calls[0][0];
         expect(dialogArgs.content).toContain('Test Attack');
         expect(dialogArgs.content).toContain('DK H, AT 10, TP 1d6+4');
+    });
+
+    test('execute() should handle multiple attacks correctly', async () => {
+        // Mock multiple attacks
+        const mockParserMultipleAttacks = {
+            hasMeisterpersonAbility: () => true,
+            parseAttacks: () => [
+                { name: 'Sword Attack', at: 12, tp: '1d6+6', dk: 'N' },
+                { name: 'Claw Attack', at: 10, tp: '1d6+2', dk: 'H' },
+                { name: 'Bite Attack', at: 8, tp: '2d6+4', dk: 'N' }
+            ]
+        };
+        game.modules.get().api.utils.MeisterpersonParser = jest.fn(() => mockParserMultipleAttacks);
+
+        await DSANPCAction.execute();
+        expect(Dialog).toHaveBeenCalled();
+        const dialogArgs = Dialog.mock.calls[0][0];
+        
+        // Check if all attacks are present in the dialog
+        const attacks = mockParserMultipleAttacks.parseAttacks();
+        attacks.forEach(attack => {
+            // Check attack name
+            expect(dialogArgs.content).toContain(attack.name);
+            
+            // Check attack stats
+            const statsText = `DK ${attack.dk}, AT ${attack.at}, TP ${attack.tp}`;
+            expect(dialogArgs.content).toContain(statsText);
+            
+            // Check data attribute
+            const dataAttribute = `data-attack='{"name":"${attack.name}","at":${attack.at},"tp":"${attack.tp}","dk":"${attack.dk}"}'`;
+            expect(dialogArgs.content).toContain(dataAttribute);
+        });
+
+        // Check that we have the correct number of attack entries
+        const attackDivCount = (dialogArgs.content.match(/<div class="attack-item">/g) || []).length;
+        expect(attackDivCount).toBe(3);
+
+        // Check that action buttons are present
+        expect(dialogArgs.content).toContain('data-macro="attack"');
+        expect(dialogArgs.content).toContain('data-macro="parade"');
+        expect(dialogArgs.content).toContain('data-macro="damage"');
+        expect(dialogArgs.content).toContain('data-macro="zoneWounds"');
     });
 });

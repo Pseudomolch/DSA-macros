@@ -134,17 +134,40 @@ export class DSADamage {
         });
     }
     
-    static getArmorValue(hitLocation, armor) {
+    static getArmorKey(hitLocation) {
         switch (hitLocation) {
-            case "am Kopf": return armor.kopf;
-            case "an der Brust": return Array.isArray(armor.brust) ? armor.brust[0] : armor.brust;
-            case "am rechten Arm": return Array.isArray(armor.arme) ? armor.arme[1] : armor.arme;
-            case "am linken Arm": return Array.isArray(armor.arme) ? armor.arme[0] : armor.arme;
-            case "am Bauch": return armor.bauch;
-            case "am rechten Bein": return Array.isArray(armor.beine) ? armor.beine[1] : armor.beine;
-            case "am linken Bein": return Array.isArray(armor.beine) ? armor.beine[0] : armor.beine;
-            default: return 0;
+            case "am Kopf": return "kopf";
+            case "an der Brust": return "brust";
+            case "am rechten Arm": return "arme";
+            case "am linken Arm": return "arme";
+            case "am Bauch": return "bauch";
+            case "am rechten Bein": return "beine";
+            case "am linken Bein": return "beine";
+            default: return "kopf";
         }
+    }
+
+    static getArmorValue(hitLocation, armor) {
+        const armorKey = this.getArmorKey(hitLocation);
+        const armorValue = armor[armorKey];
+
+        // Return 0 if no armor value exists
+        if (armorValue === undefined) return 0;
+
+        // For locations that can have different values for left/right
+        if (Array.isArray(armorValue)) {
+            switch (hitLocation) {
+                case "an der Brust": return armorValue[0];
+                case "am rechten Arm":
+                case "am rechten Bein": return armorValue[1];
+                case "am linken Arm":
+                case "am linken Bein": return armorValue[0];
+                default: return armorValue[0];
+            }
+        }
+
+        // For single armor values
+        return armorValue;
     }
     
     static async handleWounds(totalDamage, hitLocation, targetedToken, damageValues) {
@@ -174,7 +197,8 @@ export class DSADamage {
         
         // Calculate wounds based on damage
         let wounds = 0;
-        const effectiveDamage = Math.max(0, totalDamage - damageValues.armor[hitLocation]);
+        const armorValue = this.getArmorValue(hitLocation, damageValues.armor);
+        const effectiveDamage = Math.max(0, totalDamage - armorValue);
         woundThresholds.forEach(threshold => {
             if (effectiveDamage >= threshold) wounds++;
         });
