@@ -45,9 +45,29 @@ export class MeisterpersonParser {
         };
     }
 
+    parseStats() {
+        if (!this.description) return {};
+
+        const stats = {};
+        const lines = this.description.split('\n');
+        const statRegex = /(\w+)\s+(\d+)/g;
+
+        for (const line of lines) {
+            if (line.trim().startsWith('Angriff')) continue;
+
+            let match;
+            while ((match = statRegex.exec(line)) !== null) {
+                const [_, stat, value] = match;
+                stats[stat.toLowerCase()] = parseInt(value);
+            }
+        }
+
+        return stats;
+    }
+
     getArmorValue() {
-        const match = this.description.match(/RS\s+(\d+)/);
-        return match ? parseInt(match[1]) : null;
+        const stats = this.parseStats();
+        return stats.rs || null;
     }
 
     getFirstAttackTP() {

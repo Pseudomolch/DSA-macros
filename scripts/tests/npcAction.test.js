@@ -45,6 +45,19 @@ describe('DSANPCAction', () => {
                                         { name: 'Test Attack', at: 10, tp: '1d6+4', dk: 'H' }
                                     ];
                                 }
+                                parseStats() {
+                                    return {
+                                        ini: 4,
+                                        pa: 8,
+                                        lep: 30,
+                                        rs: 1,
+                                        ko: 13,
+                                        gs: 6,
+                                        aup: 30,
+                                        mr: 2,
+                                        gw: 4
+                                    };
+                                }
                             }
                         },
                         dialogs: {

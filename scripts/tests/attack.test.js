@@ -5,7 +5,18 @@ import { jest } from '@jest/globals';
 // Mock MeisterpersonParser
 const mockMeisterpersonParser = {
     hasMeisterpersonAbility: jest.fn(),
-    parseAttacks: jest.fn()
+    parseAttacks: jest.fn(),
+    parseStats: jest.fn().mockReturnValue({
+        ini: 4,
+        pa: 8,
+        lep: 30,
+        rs: 1,
+        ko: 13,
+        gs: 6,
+        aup: 30,
+        mr: 2,
+        gw: 4
+    })
 };
 
 jest.mock('../utils/meisterpersonParser.js', () => ({

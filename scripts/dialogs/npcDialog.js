@@ -9,14 +9,15 @@ export class NPCDialog {
         const basicAttributes = system?.basicAttributes || {};
 
         // Get stats with safe fallbacks
-        const initiative = combatAttributes?.initiative?.value || 0;
-        const parry = combatAttributes?.parry?.value || 0;
-        const magicResistance = combatAttributes?.magicResistance?.value || 0;
-        const mentalResistance = combatAttributes?.mentalResistance?.value || 0;
-        const speed = basicAttributes?.speed?.value || 0;
-        const armorValue = parser?.getArmorValue() || 0;
-        const vitality = resources?.vitality || { value: 0, max: 0 };
-        const endurance = resources?.endurance || { value: 0, max: 0 };
+        const stats = parser?.parseStats() || {};
+        const armorValue = stats.rs || 0;
+        const vitality = { value: stats.lep || 0, max: stats.lep || 0 };
+        const endurance = { value: stats.aup || 0, max: stats.aup || 0 };
+        const initiative = stats.ini || 0;
+        const parry = stats.pa || 0;
+        const magicResistance = stats.mr || 0;
+        const mentalResistance = stats.gw || 0;
+        const speed = stats.gs || 0;
 
         // Create dialog content
         const content = `
@@ -100,43 +101,49 @@ export class NPCDialog {
             </style>
             <div class="npc-dialog">
                 <div class="npc-dialog__header">
-                    <img src="${token.document.texture.src}" alt="${token.name}" class="npc-dialog__image">
-                    <h2 class="npc-dialog__title">${token.name}</h2>
+                    <img class="npc-dialog__image" src="${token.document?.texture?.src || ''}" alt="${actor.name}">
+                    <div class="npc-dialog__title">${actor.name}</div>
                 </div>
 
                 <div class="npc-dialog__stats">
                     <div class="stat-item">
-                        <span class="stat-label">INI</span>
+                        <span class="stat-label">Initiative:</span>
                         <span class="stat-value">${initiative}</span>
                     </div>
-                    <div class="stat-item clickable" data-action="parade">
-                        <span class="stat-label">PA</span>
+                    <div class="stat-item">
+                        <span class="stat-label">Parade:</span>
                         <span class="stat-value">${parry}</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">MR</span>
-                        <span class="stat-value">${magicResistance}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">KO</span>
-                        <span class="stat-value">${mentalResistance}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">GS</span>
-                        <span class="stat-value">${speed}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">RS</span>
+                        <span class="stat-label">Rüstungsschutz:</span>
                         <span class="stat-value">${armorValue}</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">LE</span>
+                        <span class="stat-label">Geschwindigkeit:</span>
+                        <span class="stat-value">${speed}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Magieresistenz:</span>
+                        <span class="stat-value">${magicResistance}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Gewandtheit:</span>
+                        <span class="stat-value">${mentalResistance}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">LeP:</span>
                         <span class="stat-value">${vitality.value}/${vitality.max}</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">AE</span>
+                        <span class="stat-label">AuP:</span>
                         <span class="stat-value">${endurance.value}/${endurance.max}</span>
                     </div>
+                    ${stats.ko ? `
+                    <div class="stat-item">
+                        <span class="stat-label">Konstitution:</span>
+                        <span class="stat-value">${stats.ko}</span>
+                    </div>
+                    ` : ''}
                 </div>
 
                 ${woundEffects?.length > 0 ? `

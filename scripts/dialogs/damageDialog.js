@@ -29,7 +29,16 @@ export class DamageDialog {
         } else {
             const parser = new MeisterpersonParser(actor);
             if (parser.hasMeisterpersonAbility()) {
-                return parser.getArmorValues();
+                const stats = parser.parseStats();
+                if (stats.rs) {
+                    return {
+                        kopf: stats.rs,
+                        brust: stats.rs,
+                        arme: stats.rs,
+                        bauch: stats.rs,
+                        beine: stats.rs
+                    };
+                }
             }
         }
 
@@ -38,7 +47,10 @@ export class DamageDialog {
 
     static getTPFromMeisterperson(actor) {
         const parser = new MeisterpersonParser(actor);
-        return parser.hasMeisterpersonAbility() ? parser.getFirstAttackTP() : null;
+        if (!parser.hasMeisterpersonAbility()) return null;
+        
+        const attacks = parser.parseAttacks();
+        return attacks.length > 0 ? attacks[0].tp : null;
     }
 
     static parseArmorValue(value) {
