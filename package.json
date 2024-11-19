@@ -1,6 +1,6 @@
 {
   "name": "dsa-macros",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "DSA Macros for Foundry VTT",
   "type": "module",
   "scripts": {
