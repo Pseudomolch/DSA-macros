@@ -1,22 +1,21 @@
 import { DSAAttack } from '../macros/attack.js';
 import { MeisterpersonParser } from '../utils/meisterpersonParser.js';
 import { jest } from '@jest/globals';
+import {
+    mockGame,
+    mockCanvas,
+    mockUI,
+    mockChatMessage,
+    mockMeisterpersonData,
+    setupGlobalMocks,
+    resetMocks
+} from './resources/mockData.js';
 
 // Mock MeisterpersonParser
 const mockMeisterpersonParser = {
     hasMeisterpersonAbility: jest.fn(),
     parseAttacks: jest.fn(),
-    parseStats: jest.fn().mockReturnValue({
-        ini: 4,
-        pa: 8,
-        lep: 30,
-        rs: 1,
-        ko: 13,
-        gs: 6,
-        aup: 30,
-        mr: 2,
-        gw: 4
-    })
+    parseStats: jest.fn().mockReturnValue(mockMeisterpersonData)
 };
 
 jest.mock('../utils/meisterpersonParser.js', () => ({
@@ -24,87 +23,16 @@ jest.mock('../utils/meisterpersonParser.js', () => ({
 }));
 
 describe('DSAAttack', () => {
-    let mockCanvas;
-    let mockGame;
-    let mockUI;
-    let mockChatMessage;
-    let mockDialog;
+    beforeAll(() => {
+        setupGlobalMocks();
+    });
 
     beforeEach(() => {
-        // Mock canvas and tokens
-        mockCanvas = {
-            tokens: {
-                controlled: []
-            }
-        };
-        global.canvas = mockCanvas;
-
-        // Mock game module and API
-        mockDialog = {
-            execute: jest.fn()
-        };
-        mockGame = {
-            modules: {
-                get: jest.fn().mockReturnValue({
-                    api: {
-                        dialogs: {
-                            AttackDialog: mockDialog
-                        }
-                    }
-                })
-            }
-        };
-        global.game = mockGame;
-
-        // Mock UI notifications
-        mockUI = {
-            notifications: {
-                error: jest.fn()
-            }
-        };
-        global.ui = mockUI;
-
-        // Mock ChatMessage
-        mockChatMessage = {
-            create: jest.fn().mockResolvedValue({ id: 'mock-message-id' }),
-            getSpeaker: jest.fn().mockReturnValue({ alias: 'Test Speaker' })
-        };
-        global.ChatMessage = mockChatMessage;
-
-        // Mock Roll class
-        global.Roll = class {
-            constructor(formula) {
-                this.formula = formula;
-            }
-            async roll() {
-                return { total: 10 }; // Default roll value
-            }
-        };
-
-        // Mock document methods
-        global.document = {
-            querySelector: jest.fn().mockReturnValue({
-                querySelector: jest.fn().mockReturnValue({
-                    addEventListener: jest.fn(),
-                    removeEventListener: jest.fn()
-                })
-            })
-        };
-
-        // Mock Hooks
-        global.Hooks = {
-            once: jest.fn()
-        };
-
-        // Mock DSAMacros global
-        global.DSAMacros = {
-            macros: {
-                DSADamage: { execute: jest.fn() }
-            }
-        };
-
-        // Reset all mocks
-        jest.clearAllMocks();
+        resetMocks();
+        // Reset MeisterpersonParser mocks
+        mockMeisterpersonParser.hasMeisterpersonAbility.mockReset();
+        mockMeisterpersonParser.parseAttacks.mockReset();
+        mockMeisterpersonParser.parseStats.mockReset().mockReturnValue(mockMeisterpersonData);
     });
 
     describe('execute', () => {

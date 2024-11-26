@@ -1,6 +1,6 @@
 // Parade Dialog for DSA 4.1
 export class ParadeDialog {
-    static async execute(defaultParadeValue = "", paradeName = "", paradeModifier = 0) {
+    static async execute(defaultParadeValue = "", paradeModifier = 0) {
         return new Promise((resolve) => {
             new Dialog({
                 title: "DSA 4.1 Parade",
@@ -41,8 +41,7 @@ export class ParadeDialog {
                             
                             resolve({
                                 paradeValue,
-                                modifier,
-                                paradeName
+                                modifier
                             });
                         }
                     },

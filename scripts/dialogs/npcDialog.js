@@ -176,7 +176,6 @@ export class NPCDialog {
                     // Set parade data on the token
                     await token.document.setFlag("world", "paradeData", {
                         defaultParadeValue: parry,
-                        paradeName: "Parade",
                         paradeModifier: 0
                     });
                     

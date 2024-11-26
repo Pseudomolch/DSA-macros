@@ -3,7 +3,6 @@ export class DSAParade {
     static async execute() {
         let selectedToken = null;
         let defaultParadeValue = "";
-        let paradeName = "";
         let paradeModifier = 0;
 
         if (canvas.tokens.controlled.length === 1) {
@@ -13,7 +12,6 @@ export class DSAParade {
             const paradeData = selectedToken.document.getFlag("world", "paradeData");
             if (paradeData && paradeData.defaultParadeValue !== undefined) {
                 defaultParadeValue = String(paradeData.defaultParadeValue);
-                paradeName = paradeData.paradeName || "";
                 paradeModifier = paradeData.paradeModifier || 0;
                 
                 // Clear the flag after reading
@@ -27,7 +25,6 @@ export class DSAParade {
         // Get parade values from dialog
         const paradeValues = await game.modules.get('dsa-macros').api.dialogs.ParadeDialog.execute(
             defaultParadeValue,
-            paradeName,
             paradeModifier
         );
         
@@ -54,15 +51,13 @@ export class DSAParade {
         
         // Create the chat message content
         let messageContent = `<div style="background-color: #f0f0f0; border: 1px solid #ccc; padding: 5px; border-radius: 3px;">`;
-        messageContent += `<strong>Parade${paradeValues.paradeName ? ` (${paradeValues.paradeName})` : ''}</strong><br>`;
-        messageContent += `Würfelwurf: ${rollTotal}<br>`;
-        messageContent += `Paradewert: ${paradeValues.paradeValue}`;
-        
+        messageContent += `<strong>${selectedToken.name}</strong> pariert<br>`;
+        messageContent += `<strong>Parade:</strong> ${paradeValues.paradeValue}`;
         if (totalModifier !== 0) {
             messageContent += ` ${totalModifier >= 0 ? '+' : ''}${totalModifier}`;
         }
-        
-        messageContent += `<br><strong>Ergebnis: ${isSuccess ? 'Erfolg' : 'Misserfolg'}</strong>`;
+        messageContent += `<br><strong>Würfelwurf:</strong> ${rollTotal}<br>`;
+        messageContent += `<strong>Ergebnis: ${isSuccess ? 'Erfolg' : 'Misserfolg'}</strong>`;
         
         if (isCriticalSuccess) {
             messageContent += `<br><em>Meisterliche Parade!</em>`;

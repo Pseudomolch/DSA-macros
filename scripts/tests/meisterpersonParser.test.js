@@ -1,8 +1,17 @@
 // @jest/environment jsdom
 import { jest } from '@jest/globals';
 import { MeisterpersonParser } from '../utils/meisterpersonParser.js';
+import { mockToken, setupGlobalMocks, resetMocks } from './resources/mockData.js';
 
 describe('MeisterpersonParser', () => {
+    beforeAll(() => {
+        setupGlobalMocks();
+    });
+
+    beforeEach(() => {
+        resetMocks();
+    });
+
     let mockActor;
     const sampleAbilityText = `
         INI 4, PA 8, LeP 30, RS 1, KO 13
