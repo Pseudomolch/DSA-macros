@@ -31,3 +31,4 @@ jest-cache/
 # Example files
 examples/emaple_zonenschaden.js
 examples/example_zonenwunden.js
+examples/example_actor.json

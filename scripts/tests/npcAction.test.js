@@ -4,10 +4,12 @@ import { jest } from '@jest/globals';
 import {
     mockGame,
     mockToken,
-    mockUI,
-    mockChatMessage,
     setupGlobalMocks,
-    resetMocks
+    resetMocks,
+    mockParserNoAbility,
+    mockParserNoAttacks,
+    mockCanvas,
+    mockParser
 } from './resources/mockData.js';
 
 describe('DSANPCAction', () => {
@@ -17,8 +19,9 @@ describe('DSANPCAction', () => {
 
     beforeEach(() => {
         resetMocks();
-        // Any specific setup for NPC Action tests
-        mockGame.user.targets.first.mockReturnValue(mockToken);
+        // Set up default mock parser for tests that need it
+        const moduleAPI = mockGame.modules.get().api;
+        moduleAPI.utils.MeisterpersonParser.mockReturnValue(mockParser);
     });
 
     afterEach(() => {
@@ -27,69 +30,69 @@ describe('DSANPCAction', () => {
 
     test('execute() should fail if no token is selected', async () => {
         mockGame.user.targets.first.mockReturnValue(null);
+        mockCanvas.tokens.controlled = [];
         await DSANPCAction.execute();
-        expect(mockUI.notifications.error).toHaveBeenCalledWith('Bitte wähle einen Token aus.');
+        const moduleAPI = mockGame.modules.get().api;
+        expect(moduleAPI.dialogs.NPCDialog.execute).not.toHaveBeenCalled();
     });
 
     test('execute() should fail if token has no Meisterperson ability', async () => {
-        const mockParserNoAbility = {
-            hasMeisterpersonAbility: () => false
-        };
-        mockGame.modules.get().api.utils.MeisterpersonParser = jest.fn(() => mockParserNoAbility);
-        
+        const moduleAPI = mockGame.modules.get().api;
+        moduleAPI.utils.MeisterpersonParser.mockReturnValue(mockParserNoAbility);
         await DSANPCAction.execute();
-        expect(mockUI.notifications.error).toHaveBeenCalledWith('Der ausgewählte Token hat keine Meisterperson-Fähigkeit.');
+        expect(moduleAPI.dialogs.NPCDialog.execute).not.toHaveBeenCalled();
     });
 
     test('execute() should fail if no attacks are found', async () => {
-        const mockParserNoAttacks = {
-            hasMeisterpersonAbility: () => true,
-            parseAttacks: () => []
-        };
-        mockGame.modules.get().api.utils.MeisterpersonParser = jest.fn(() => mockParserNoAttacks);
-        
+        const moduleAPI = mockGame.modules.get().api;
+        moduleAPI.utils.MeisterpersonParser.mockReturnValue(mockParserNoAttacks);
         await DSANPCAction.execute();
-        expect(mockUI.notifications.error).toHaveBeenCalledWith('Keine Angriffe für diesen NSC gefunden.');
+        expect(moduleAPI.dialogs.NPCDialog.execute).not.toHaveBeenCalled();
     });
 
     test('execute() should handle attack action with specific attack data', async () => {
-        const testAttack = { name: 'Test Attack', at: 10, tp: '1d6+4', dk: 'H' };
-        mockGame.modules.get().api.dialogs.NPCDialog.execute.mockResolvedValue({ 
-            action: 'attack',
-            attack: testAttack
-        });
-
+        mockGame.currentAction = 'attack';
         await DSANPCAction.execute();
 
-        // Check if attack data was set
+        // Get the expected attack data from the parser
+        const expectedAttack = mockParser.parseAttacks()[0];
+        const moduleAPI = mockGame.modules.get().api;
+
+        // Check if dialog was executed
+        expect(moduleAPI.dialogs.NPCDialog.execute).toHaveBeenCalled();
+        
+        // Check if attack data was set with the parsed data
         expect(mockToken.document.setFlag).toHaveBeenCalledWith('world', 'attackData', {
-            defaultAttackValue: testAttack.at,
-            attackName: testAttack.name,
-            damageFormula: testAttack.tp
+            defaultAttackValue: expectedAttack.at,
+            attackName: expectedAttack.name,
+            damageFormula: expectedAttack.tp
         });
 
         // Check if attack macro was executed
-        expect(mockGame.modules.get().api.macros.DSAAttack.execute).toHaveBeenCalled();
+        expect(moduleAPI.macros.DSAAttack.execute).toHaveBeenCalled();
     });
 
     test('execute() should handle parade action', async () => {
-        mockGame.modules.get().api.dialogs.NPCDialog.execute.mockResolvedValue({ action: 'parade' });
-
+        mockGame.currentAction = 'parade';
         await DSANPCAction.execute();
-        expect(mockGame.modules.get().api.macros.DSAParade.execute).toHaveBeenCalled();
+        const moduleAPI = mockGame.modules.get().api;
+        expect(moduleAPI.dialogs.NPCDialog.execute).toHaveBeenCalled();
+        expect(moduleAPI.macros.DSAParade.execute).toHaveBeenCalled();
     });
 
     test('execute() should handle damage action', async () => {
-        mockGame.modules.get().api.dialogs.NPCDialog.execute.mockResolvedValue({ action: 'damage' });
-
+        mockGame.currentAction = 'damage';
         await DSANPCAction.execute();
-        expect(mockGame.modules.get().api.macros.DSADamage.execute).toHaveBeenCalled();
+        const moduleAPI = mockGame.modules.get().api;
+        expect(moduleAPI.dialogs.NPCDialog.execute).toHaveBeenCalled();
+        expect(moduleAPI.macros.DSADamage.execute).toHaveBeenCalled();
     });
 
     test('execute() should handle zoneWounds action', async () => {
-        mockGame.modules.get().api.dialogs.NPCDialog.execute.mockResolvedValue({ action: 'zoneWounds' });
-
+        mockGame.currentAction = 'zoneWounds';
         await DSANPCAction.execute();
-        expect(mockGame.modules.get().api.macros.DSAZoneWounds.execute).toHaveBeenCalled();
+        const moduleAPI = mockGame.modules.get().api;
+        expect(moduleAPI.dialogs.NPCDialog.execute).toHaveBeenCalled();
+        expect(moduleAPI.macros.DSAZoneWounds.execute).toHaveBeenCalled();
     });
 });

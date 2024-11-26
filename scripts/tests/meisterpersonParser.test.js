@@ -1,7 +1,7 @@
 // @jest/environment jsdom
 import { jest } from '@jest/globals';
 import { MeisterpersonParser } from '../utils/meisterpersonParser.js';
-import { mockToken, setupGlobalMocks, resetMocks } from './resources/mockData.js';
+import { mockActor, setupGlobalMocks, resetMocks } from './resources/mockData.js';
 
 describe('MeisterpersonParser', () => {
     beforeAll(() => {
@@ -12,34 +12,14 @@ describe('MeisterpersonParser', () => {
         resetMocks();
     });
 
-    let mockActor;
-    const sampleAbilityText = `
-        INI 4, PA 8, LeP 30, RS 1, KO 13
-        GS 6, AuP 30, MR 2, GW 4
-        Angriff Test, DK H, AT 12, TP 1W+4
-        Angriff Test Neu, DK S, AT 11, TP 12
-    `;
-
-    beforeEach(() => {
-        mockActor = {
-            items: [{
-                type: "specialAbility",
-                name: "Meisterperson",
-                system: {
-                    description: sampleAbilityText
-                }
-            }]
-        };
-    });
-
     test('hasMeisterpersonAbility() should return true when ability exists', () => {
         const parser = new MeisterpersonParser(mockActor);
         expect(parser.hasMeisterpersonAbility()).toBe(true);
     });
 
     test('hasMeisterpersonAbility() should return false when ability does not exist', () => {
-        mockActor.items = [];
-        const parser = new MeisterpersonParser(mockActor);
+        const emptyActor = { ...mockActor, items: [] };
+        const parser = new MeisterpersonParser(emptyActor);
         expect(parser.hasMeisterpersonAbility()).toBe(false);
     });
 
