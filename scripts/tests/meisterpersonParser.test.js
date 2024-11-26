@@ -4,10 +4,12 @@ import { MeisterpersonParser } from '../utils/meisterpersonParser.js';
 
 describe('MeisterpersonParser', () => {
     let mockActor;
-    const sampleAbilityText = `INI 4, PA 8, LeP 30, RS 1, KO 13
-GS 6, AuP 30, MR 2, GW 4
-Angriff Test, DK H, AT 12, TP 1W+4
-Angriff Test Neu, DK S, AT 11, TP 12`;
+    const sampleAbilityText = `
+        INI 4, PA 8, LeP 30, RS 1, KO 13
+        GS 6, AuP 30, MR 2, GW 4
+        Angriff Test, DK H, AT 12, TP 1W+4
+        Angriff Test Neu, DK S, AT 11, TP 12
+    `;
 
     beforeEach(() => {
         mockActor = {

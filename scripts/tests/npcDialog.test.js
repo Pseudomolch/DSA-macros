@@ -14,11 +14,12 @@ beforeEach(() => {
     
     // Mock Dialog class
     global.Dialog = jest.fn().mockImplementation(dialogData => {
-        return {
+        mockDialogInstance = {
             data: dialogData,
             render: jest.fn().mockResolvedValue(true),
             close: jest.fn()
         };
+        return mockDialogInstance;
     });
 
     // Mock token with test data
@@ -27,25 +28,41 @@ beforeEach(() => {
         document: {
             texture: {
                 src: 'test.png'
-            }
+            },
+            setFlag: jest.fn().mockResolvedValue(true),
+            unsetFlag: jest.fn().mockResolvedValue(true)
         },
         actor: {
             name: 'Test Token',
             img: 'test.png',
-            data: {
-                data: {
-                    stats: {
-                        initiative: { value: 10 },
-                        parade: { value: 15 },
-                        magicresistance: { value: 5 },
-                        constitution: { value: 5 },
-                        speed: { value: 8 },
-                        armor: { value: 2 },
-                        lifepoints: { value: 30, max: 30 },
-                        endurance: { value: 30, max: 30 }
+            system: {
+                base: {
+                    resources: {
+                        vitality: {
+                            value: 30,
+                            max: 30
+                        }
                     }
                 }
             }
+        }
+    };
+
+    // Mock game.modules
+    global.game = {
+        modules: {
+            get: jest.fn().mockReturnValue({
+                api: {
+                    macros: {
+                        DSAParade: {
+                            execute: jest.fn().mockResolvedValue(true)
+                        },
+                        DSAAttack: {
+                            execute: jest.fn().mockResolvedValue(true)
+                        }
+                    }
+                }
+            })
         }
     };
 
@@ -56,13 +73,13 @@ beforeEach(() => {
         parseStats: jest.fn().mockReturnValue({
             ini: 4,
             pa: 8,
+            mr: 3,
+            gw: 5,
+            gs: 8,
+            ko: 12,
+            rs: 2,
             lep: 30,
-            rs: 1,
-            ko: 13,
-            gs: 6,
-            aup: 30,
-            mr: 2,
-            gw: 4
+            aup: 30
         })
     };
 
@@ -196,7 +213,7 @@ test('execute() should create dialog with correct stats from meisterperson abili
     expect(statsText).toContain('Rüstungsschutz: 1');
     expect(statsText).toContain('Geschwindigkeit: 6');
     expect(statsText).toContain('Magieresistenz: 2');
-    expect(statsText).toContain('Gewandtheit: 4');
+    expect(statsText).toContain('Gefahrenwert: 4');
     expect(statsText).toContain('LeP: 30/30');
     expect(statsText).toContain('AuP: 30/30');
     expect(statsText).toContain('Konstitution: 13');
@@ -267,4 +284,72 @@ test('should handle completely missing actor data', async () => {
     const statsText = stats.textContent.replace(/\s+/g, ' ').trim();
     expect(statsText).toContain('Initiative: 0');
     expect(statsText).toContain('Parade: 0');
+});
+
+describe('NPCDialog click handlers', () => {
+    let $html;
+    let renderCallback;
+
+    beforeEach(async () => {
+        // Create a mock HTML structure
+        document.body.innerHTML = `
+            <div>
+                <div class="stat-item clickable" data-action="parade"></div>
+                <div class="attack-emoji" data-attack='{"name":"Test Attack","at":"10","tp":"1d6+4"}'></div>
+            </div>
+        `;
+        $html = $(document.body);
+
+        // Execute dialog to get render callback
+        await NPCDialog.execute(mockToken, [], [], mockParser);
+        renderCallback = mockDialogInstance.data.render;
+        
+        // Call render callback with jQuery wrapped HTML
+        await renderCallback($html);
+    });
+
+    test('parade click should set correct flag and execute parade macro', async () => {
+        // Trigger parade click
+        await $html.find('[data-action="parade"]').trigger('click');
+
+        // Verify flag was set correctly
+        expect(mockToken.document.setFlag).toHaveBeenCalledWith(
+            "world",
+            "paradeData",
+            {
+                defaultParadeValue: 8,
+                paradeName: "Parade",
+                paradeModifier: 0
+            }
+        );
+
+        // Verify macro was executed
+        expect(game.modules.get().api.macros.DSAParade.execute).toHaveBeenCalled();
+
+        // Verify dialog was closed
+        expect(mockDialogInstance.close).toHaveBeenCalled();
+    });
+
+    test('attack click should set correct flag and execute attack macro', async () => {
+        // Trigger attack click
+        await $html.find('.attack-emoji').trigger('click');
+
+        // Verify flag was set correctly
+        expect(mockToken.document.setFlag).toHaveBeenCalledWith(
+            "world",
+            "attackData",
+            {
+                defaultAttackValue: "10",
+                attackName: "Test Attack",
+                attackModifier: 0,
+                damageFormula: "1d6+4"
+            }
+        );
+
+        // Verify macro was executed
+        expect(game.modules.get().api.macros.DSAAttack.execute).toHaveBeenCalled();
+
+        // Verify dialog was closed
+        expect(mockDialogInstance.close).toHaveBeenCalled();
+    });
 });
